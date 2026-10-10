@@ -62,14 +62,18 @@ const PARTIAL = {
 
 // The short list. Each of these exists to change a web page or to talk to Vencord's own services, so
 // there is no client behaviour left to reproduce once you are not running a web app.
+//
+// Kept deliberately short. An earlier version of this file put 146 entries here on the strength of a
+// scan for `dom`/`styles`/`store` usage in Vencord's source, which described Vencord's technique
+// rather than a limit here - six plugins already implemented natively in this client are
+// stylesheet-based upstream. `Unsupported` has to mean "there is nothing left to port", not "not
+// built yet", or it stops being information.
 const UNSUPPORTED = {
-  'webPWA.browser': 'Exists to make Discord work as an installable web app; there is no page here',
-  'webScreenShare.browser': 'Drives the browser tab-capture API for screen sharing',
+  'webPWA.browser': 'Exists to make Discord work as an installable web app; this client already is one',
+  'webScreenShare.browser': 'Drives the browser tab-capture API, which has no native equivalent',
   'webContextMenus.web': 'Replaces the browser context menu on links',
   vencordToolbox: 'A patching toolbox for the minified web client, which does not exist here',
-  reviewDB: 'Reads a crowdsourced review database served by Vencord, not by Discord',
-  experiments: 'Seeds Discord A/B experiment overrides; this client has no experiment registry',
-  crashHandler: 'Crash reporting for a renderer process; crashes here belong to the host',
+  crashHandler: 'Recovers from renderer-process crashes; a wgpu panic is not recoverable mid-frame',
   customRPC: 'Bridges to a locally running Discord RPC process, which this build does not ship',
   decor: 'Profile decorations come from a server-gated catalog this client does not implement',
 };
@@ -112,6 +116,12 @@ const PLANNED_NOTE = {
   openInApp: 'Links open in the system browser rather than in the client',
   clearURLs: 'Tracking parameters are still passed through to opened links',
   unsuppressEmbeds: 'Embeds can be suppressed in the model, but no UI sets the flag',
+  // These two depend on Vencord's own backend rather than on anything Discord serves, so the mod as
+  // written cannot be reproduced. The underlying need is portable though, which is why they are
+  // Planned and not Unsupported: a review UI can be built against a different data source, and
+  // experiment overrides are just seeded flags.
+  reviewDB: 'Vencord\'s crowdsourced review database is not reachable; the review UI itself is portable',
+  experiments: 'There is no experiment registry to seed; the overrides are just flags on the session',
 };
 
 const rows = [];

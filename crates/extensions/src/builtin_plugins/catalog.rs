@@ -246,7 +246,7 @@ pub const ALL: &[Plugin] = &[
 		name: "CrashHandler",
 		description: "Utility plugin for handling and possibly recovering from crashes without a restart",
 		port: Port::Unsupported,
-		note: "Crash reporting for a renderer process; crashes here belong to the host",
+		note: "Recovers from renderer-process crashes; a wgpu panic is not recoverable mid-frame",
 		setting: None,
 	},
 	Plugin {
@@ -317,8 +317,8 @@ pub const ALL: &[Plugin] = &[
 		id: "experiments",
 		name: "Experiments",
 		description: "Enable Access to Experiments & other dev-only features in Discord!",
-		port: Port::Unsupported,
-		note: "Seeds Discord A/B experiment overrides; this client has no experiment registry",
+		port: Port::Planned,
+		note: "There is no experiment registry to seed; the overrides are just flags on the session",
 		setting: None,
 	},
 	Plugin {
@@ -925,8 +925,8 @@ pub const ALL: &[Plugin] = &[
 		id: "reviewDB",
 		name: "ReviewDB",
 		description: "Review other users (Adds a new settings to profiles)",
-		port: Port::Unsupported,
-		note: "Reads a crowdsourced review database served by Vencord, not by Discord",
+		port: Port::Planned,
+		note: "Vencord's crowdsourced review database is not reachable; the review UI itself is portable",
 		setting: None,
 	},
 	Plugin {
@@ -1294,7 +1294,7 @@ pub const ALL: &[Plugin] = &[
 		name: "WebPWA",
 		description: "Makes Discord installable as an App (PWA). Enables notification badges, global key-binds and Discord's custom title bar.",
 		port: Port::Unsupported,
-		note: "Exists to make Discord work as an installable web app; there is no page here",
+		note: "Exists to make Discord work as an installable web app; this client already is one",
 		setting: None,
 	},
 	Plugin {
@@ -1302,7 +1302,7 @@ pub const ALL: &[Plugin] = &[
 		name: "WebScreenShare",
 		description: "Adds a screenshare options menu. Allows for changing resolution, framerate, encoding hints, and system audio settings.",
 		port: Port::Unsupported,
-		note: "Drives the browser tab-capture API for screen sharing",
+		note: "Drives the browser tab-capture API, which has no native equivalent",
 		setting: None,
 	},
 	Plugin {
