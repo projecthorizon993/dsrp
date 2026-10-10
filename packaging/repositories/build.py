@@ -93,7 +93,7 @@ def build(args):
                 metadata = run("bsdtar", "-xOf", str(target), ".PKGINFO")
                 values = dict(line.split(" = ", 1) for line in metadata.splitlines() if " = " in line)
                 identity, arch = values.get("pkgname"), values.get("arch")
-            if identity != "serein" or arch != args.architecture:
+            if identity != "dsrp" or arch != args.architecture:
                 raise ValueError(f"unexpected package identity/architecture: {package}")
             copied.append(target)
         if args.format == "deb":
