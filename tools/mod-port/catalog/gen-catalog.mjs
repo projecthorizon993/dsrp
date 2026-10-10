@@ -35,6 +35,8 @@ const NATIVE = {
   fixImagesQuality: 'Images load at their original resolution, never a downscaled proxy',
   alwaysExpandRoles: 'Role lists expand by default',
   userVoiceShow: 'Voice participants render in the member list',
+  typingIndicator: 'The composer row names who is typing, and clears when nobody is',
+  copyUserURLs: 'The user menu copies a discord.com/users link for the person it was opened on',
 };
 
 // Implemented, but not the way the mod does it. `setting` names the preference a switch drives, and

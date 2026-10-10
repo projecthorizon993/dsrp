@@ -546,6 +546,25 @@ pub(crate) fn copy_username_button(ui: &mut egui::Ui, state: &State, user: &User
 		ui.close();
 	}
 }
+/// Copies the `discord.com/users/<id>` link.
+///
+/// Always offered, like "Copy Channel ID" in the channel menu: a Discord user link is only the
+/// snowflake, so there is no name to resolve and nothing that can go stale. Reuses the channel
+/// menu's translated "Copy Link" rather than adding a key that would only exist in English.
+pub(crate) fn copy_user_url_button(ui: &mut egui::Ui, user: &User) {
+	if user.id.0 == 0 {
+		return;
+	}
+	if ui
+		.button(crate::i18n::translate("channel-menu-context-copy-link"))
+		.clicked()
+	{
+		ui.ctx()
+			.copy_text(format!("https://discord.com/users/{}", user.id));
+		ui.close();
+	}
+}
+
 /// Ignore toggle backed by the account relationship; blocked users stay on Unblock instead.
 pub(crate) fn ignore_button(
 	ui: &mut egui::Ui,

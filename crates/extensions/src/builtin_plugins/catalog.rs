@@ -237,8 +237,8 @@ pub const ALL: &[Plugin] = &[
 		id: "copyUserURLs",
 		name: "CopyUserURLs",
 		description: "Adds a 'Copy User URL' option to the user context menu.",
-		port: Port::Planned,
-		note: "Adds a 'Copy User URL' option to the user context menu.",
+		port: Port::Native,
+		note: "The user menu copies a discord.com/users link for the person it was opened on",
 		setting: None,
 	},
 	Plugin {
@@ -1133,8 +1133,8 @@ pub const ALL: &[Plugin] = &[
 		id: "typingIndicator",
 		name: "TypingIndicator",
 		description: "Adds an indicator if someone is typing on a channel.",
-		port: Port::Planned,
-		note: "Adds an indicator if someone is typing on a channel.",
+		port: Port::Native,
+		note: "The composer row names who is typing, and clears when nobody is",
 		setting: None,
 	},
 	Plugin {

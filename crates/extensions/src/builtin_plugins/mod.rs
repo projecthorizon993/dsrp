@@ -241,7 +241,7 @@ mod tests {
 		// Sanity-bound the claim. These are exact counts on purpose: if a port lands, the count moves
 		// and whoever moved it has to update this, which is the point.
 		assert_eq!(
-			implemented, 25,
+			implemented, 27,
 			"implemented count changed; update this test"
 		);
 	}

@@ -155,6 +155,7 @@ pub(super) fn contents(
 	}
 	if !user.webhook {
 		crate::profiles::copy_username_button(ui, state, user);
+		crate::profiles::copy_user_url_button(ui, user);
 	}
 	if user.webhook || state.user.as_ref().is_some_and(|own| own.id == user.id) {
 		return;
@@ -412,6 +413,114 @@ mod tests {
 			labels(&shape.shape, &mut text);
 		}
 		(response.unwrap(), text)
+	}
+
+	/// Like [`frame`], but also reports what reached the clipboard.
+	fn frame_copying(
+		ctx: &egui::Context,
+		state: &State,
+		user: &User,
+		events: Vec<Event>,
+		profile: &mut crate::profiles::ProfileSession,
+		action: &mut Option<Action>,
+	) -> (Vec<(String, Rect)>, Vec<String>) {
+		let mut response = None;
+		let mut output = ctx.run_ui(
+			egui::RawInput {
+				screen_rect: Some(Rect::from_min_size(Pos2::ZERO, egui::vec2(320.0, 420.0))),
+				events,
+				..Default::default()
+			},
+			|ui| {
+				let row = ui.button(&user.name);
+				show(&row, state, user, profile, action);
+				response = Some(row);
+			},
+		);
+		output.textures_delta.clear();
+		let mut text = vec![];
+		for shape in output.shapes {
+			labels(&shape.shape, &mut text);
+		}
+		let copied = output
+			.platform_output
+			.commands
+			.iter()
+			.filter_map(|command| match command {
+				egui::OutputCommand::CopyText(value) => Some(value.clone()),
+				_ => None,
+			})
+			.collect();
+		let _ = response;
+		(text, copied)
+	}
+
+	#[test]
+	fn the_user_menu_offers_a_profile_link_beside_the_username() {
+		// A user link is only the snowflake, so it has to be offered without a name lookup and has
+		// to be the account's own id rather than whatever the menu happened to be opened on.
+		let ctx = egui::Context::default();
+		let state = test_support::demo_state();
+		let dm = state.channels.iter().find(|c| c.kind == 1).unwrap();
+		let user = &dm.recipients[0];
+		let (mut profile, mut action) = (crate::profiles::ProfileSession::default(), None);
+		let open = |ctx: &egui::Context,
+		            profile: &mut crate::profiles::ProfileSession,
+		            action: &mut Option<Action>| {
+			let (row, _) = frame(ctx, &state, user, vec![], profile, action);
+			for pressed in [true, false] {
+				frame(
+					ctx,
+					&state,
+					user,
+					pointer(row.rect.center(), PointerButton::Secondary, pressed),
+					profile,
+					action,
+				);
+			}
+		};
+		open(&ctx, &mut profile, &mut action);
+		let (text, _) = frame_copying(&ctx, &state, user, vec![], &mut profile, &mut action);
+		let rect = text
+			.iter()
+			.find(|(label, _)| label == "Copy Link")
+			.unwrap_or_else(|| panic!("the menu must offer a profile link: {text:?}"))
+			.1;
+		let (_, copied) = frame_copying(
+			&ctx,
+			&state,
+			user,
+			pointer(rect.center(), PointerButton::Primary, true),
+			&mut profile,
+			&mut action,
+		);
+		assert_eq!(
+			copied,
+			vec![format!("https://discord.com/users/{}", user.id)],
+			"the link must carry this user's id"
+		);
+		// A webhook has no profile page to link to, so it must not offer one.
+		let webhook = User {
+			webhook: true,
+			..user.clone()
+		};
+		let (mut profile, mut action) = (crate::profiles::ProfileSession::default(), None);
+		let (row, _) = frame(&ctx, &state, &webhook, vec![], &mut profile, &mut action);
+		for pressed in [true, false] {
+			frame(
+				&ctx,
+				&state,
+				&webhook,
+				pointer(row.rect.center(), PointerButton::Secondary, pressed),
+				&mut profile,
+				&mut action,
+			);
+		}
+		let (text, _) = frame_copying(&ctx, &state, &webhook, vec![], &mut profile, &mut action);
+		assert!(
+			!text.iter().any(|(label, _)| label == "Copy Link"),
+			"a webhook has no user page to link to"
+		);
 	}
 
 	#[test]
