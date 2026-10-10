@@ -148,10 +148,7 @@ fn installation() -> Result<PathBuf, String> {
 			);
 		}
 		let appdir = PathBuf::from(std::env::var_os("APPDIR").ok_or("Missing AppImage mount.")?);
-		if fs::canonicalize(appdir.join("usr/bin/serein"))
-			.ok()
-			.as_ref() != Some(&exe)
-		{
+		if fs::canonicalize(appdir.join("usr/bin/dsrp")).ok().as_ref() != Some(&exe) {
 			return Err("Run Serein from its AppImage to install updates.".into());
 		}
 		let image = PathBuf::from(std::env::var_os("APPIMAGE").ok_or("Missing AppImage path.")?);
@@ -178,7 +175,7 @@ fn installation() -> Result<PathBuf, String> {
 			.parent()
 			.and_then(Path::parent)
 			.and_then(Path::parent)
-			.ok_or("Run the installed Serein.app to install updates.")?;
+			.ok_or("Run the installed dsrp.app to install updates.")?;
 		if exe.file_name().is_none_or(|name| name != "serein")
 			|| exe
 				.parent()
@@ -186,7 +183,7 @@ fn installation() -> Result<PathBuf, String> {
 				.is_none_or(|name| name != "MacOS")
 			|| app.extension().is_none_or(|extension| extension != "app")
 		{
-			return Err("Run the installed Serein.app to install updates; source builds cannot replace themselves.".into());
+			return Err("Run the installed dsrp.app to install updates; source builds cannot replace themselves.".into());
 		}
 		if app.starts_with("/Volumes") || app.to_string_lossy().contains("/AppTranslocation/") {
 			return Err(
@@ -633,7 +630,7 @@ pub(super) fn unpack(
 			.and_then(|p| p.as_os_str().to_str())
 			.ok_or("Invalid package path.")?;
 		if cfg!(target_os = "macos") {
-			if top != "Serein.app" && !WINDOWS_FILES.contains(&top) {
+			if top != "dsrp.app" && !WINDOWS_FILES.contains(&top) {
 				return Err("The update contains unexpected package content.".into());
 			}
 		} else if !WINDOWS_FILES.contains(&top) {
@@ -701,13 +698,10 @@ pub(super) fn unpack(
 		}
 	}
 	if cfg!(target_os = "macos") {
-		if !destination
-			.join("Serein.app/Contents/MacOS/serein")
-			.is_file()
-		{
-			return Err("The update does not contain Serein.app.".into());
+		if !destination.join("dsrp.app/Contents/MacOS/serein").is_file() {
+			return Err("The update does not contain dsrp.app.".into());
 		}
-		verify_mac(&destination.join("Serein.app"), installed)?;
+		verify_mac(&destination.join("dsrp.app"), installed)?;
 	} else if !destination.join("serein.exe").is_file()
 		|| !destination.join("licenses").is_dir()
 		|| !destination.join("THIRD_PARTY_NOTICES.md").is_file()
@@ -755,7 +749,7 @@ fn verify_mac(candidate: &Path, installed: &Path) -> Result<(), String> {
 	}
 	let old = identity(installed)?;
 	let new = identity(candidate)?;
-	if old != new || new.1 != "cz.viceverse.serein" {
+	if old != new || new.1 != "io.github.projecthorizon993.dsrp" {
 		return Err("The update was not signed by this Serein publisher.".into());
 	}
 	let status = Command::new("/usr/sbin/spctl")
@@ -800,7 +794,7 @@ pub(super) fn prepare_restart(
 	let _ = version;
 	#[cfg(target_os = "macos")]
 	let mut child = {
-		verify_mac(&directory.join("package/Serein.app"), installation)?;
+		verify_mac(&directory.join("package/dsrp.app"), installation)?;
 		let script = directory.join("install.sh");
 		fs::write(&script, MAC_HELPER)
 			.map_err(|_| "Cannot prepare the update helper.".to_owned())?;
@@ -930,7 +924,7 @@ if ! /bin/mv "$installed" "$backup"; then
   /usr/bin/open "$installed" || true
   exit 1
 fi
-if ! /bin/mv "$stage/package/Serein.app" "$installed"; then
+if ! /bin/mv "$stage/package/dsrp.app" "$installed"; then
   /bin/mv "$backup" "$installed"
   /usr/bin/open "$installed" || true
   exit 1
@@ -1044,13 +1038,13 @@ pub(super) fn debug_check() -> Result<(), String> {
 			return Err(format!("Archive path validation accepted {path}"));
 		}
 	}
-	if safe_path("Serein.app/Contents/MacOS/serein").is_err() {
+	if safe_path("dsrp.app/Contents/MacOS/serein").is_err() {
 		return Err("Valid archive path rejected.".into());
 	}
 	let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
 	writer
 		.start_file(
-			"Serein.app/Contents/MacOS/serein",
+			"dsrp.app/Contents/MacOS/serein",
 			zip::write::SimpleFileOptions::default(),
 		)
 		.map_err(|_| "Cannot create synthetic ZIP.")?;

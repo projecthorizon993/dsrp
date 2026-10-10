@@ -37,7 +37,7 @@ pub use login_linux::LoginView;
 
 /// Logical height of the native header the desktop app draws above the login webview.
 pub const LOGIN_HEADER_HEIGHT: f32 = 56.0;
-const SERVICE: &str = "cz.viceverse.serein";
+const SERVICE: &str = "io.github.projecthorizon993.dsrp";
 #[cfg(not(feature = "development-data"))]
 const ACCOUNT: &str = "discord-session";
 #[cfg(feature = "development-data")]
@@ -126,7 +126,7 @@ mod flatpak_locale_tests {
 				child.env("SEREIN_TEST_WEBKIT_INITIALIZE_GTK", "1");
 			}
 			if mode != "native" {
-				child.env("FLATPAK_ID", "cz.viceverse.serein");
+				child.env("FLATPAK_ID", "io.github.projecthorizon993.dsrp");
 			}
 			let output = child.output().unwrap();
 			assert!(

@@ -167,7 +167,7 @@ fn input(info: &pulse::pa_sink_input_info, own: &OwnApplication) -> Option<Input
 			property(info, c"application.name"),
 			property(info, c"application.id"),
 		) || property(info, c"flatpak.app-id")
-		.is_some_and(|v| v.eq_ignore_ascii_case("cz.viceverse.serein"))
+		.is_some_and(|v| v.eq_ignore_ascii_case("io.github.projecthorizon993.dsrp"))
 	{
 		return None;
 	}
@@ -825,7 +825,7 @@ pub(super) fn check_isolation() {
 		Some("999"),
 		Some("other"),
 		None,
-		Some("cz.viceverse.serein")
+		Some("io.github.projecthorizon993.dsrp")
 	));
 	assert!(!own.allows(None, Some("game"), None, None));
 	assert!(!own.allows(Some("123"), None, None, None));

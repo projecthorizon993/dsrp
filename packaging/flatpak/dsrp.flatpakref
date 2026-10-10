@@ -1,0 +1,9 @@
+[Flatpak Ref]
+Name=io.github.projecthorizon993.dsrp
+Branch=master
+Title=dsrp
+Comment=Fast, secure and lightweight native Discord client
+Icon=https://raw.githubusercontent.com/projecthorizon993/dsrp/main/icons/dsrp.png
+Url=https://raw.githubusercontent.com/projecthorizon993/dsrp/main/flatpak/repo
+RuntimeRepo=https://flathub.org/repo/flathub.flatpakrepo
+IsRuntime=false

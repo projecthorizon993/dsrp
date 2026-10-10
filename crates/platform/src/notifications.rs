@@ -64,7 +64,7 @@ impl Status {
 			Self::Unavailable => {
 				#[cfg(target_os = "macos")]
 				{
-					"System notifications unavailable. Run the packaged Serein.app and check System Settings > Notifications."
+					"System notifications unavailable. Run the packaged dsrp.app and check System Settings > Notifications."
 				}
 				#[cfg(target_os = "windows")]
 				{
@@ -406,7 +406,7 @@ fn authorize() -> Status {
 	{
 		use windows::{UI::Notifications::ToastNotificationManager, core::HSTRING};
 		let notifier = ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(
-			"cz.viceverse.serein",
+			"io.github.projecthorizon993.dsrp",
 		));
 		match notifier {
 			Ok(notifier) => windows_setting_status(notifier.Setting(), windows_shortcut_exists()),
@@ -493,7 +493,7 @@ fn show(alert: &Alert, activation: Activation) -> Result<NotificationHandle, ()>
 	#[cfg(target_os = "windows")]
 	{
 		use tauri_winrt_notification::{IconCrop, Toast};
-		let mut toast = Toast::new("cz.viceverse.serein")
+		let mut toast = Toast::new("io.github.projecthorizon993.dsrp")
 			.title(&alert.title)
 			.text1(&alert.body)
 			.on_activated(move |_| {
@@ -544,8 +544,9 @@ fn close(outstanding: &mut Option<NotificationHandle>) {
 	#[cfg(target_os = "windows")]
 	if outstanding.take().is_some() {
 		use windows::{UI::Notifications::ToastNotificationManager, core::HSTRING};
-		let _ = ToastNotificationManager::History()
-			.and_then(|history| history.ClearWithId(&HSTRING::from("cz.viceverse.serein")));
+		let _ = ToastNotificationManager::History().and_then(|history| {
+			history.ClearWithId(&HSTRING::from("io.github.projecthorizon993.dsrp"))
+		});
 	}
 }
 

@@ -204,10 +204,13 @@ mod tests {
 		let pid = script(State::Hidden, &Target::Pid(42));
 		assert!(pid.contains("w.pid === 42"));
 		assert!(pid.contains("skip(w, true); w.minimized = true;"));
-		let app = script(State::Shown, &Target::App("cz.viceverse.serein".into()));
-		assert!(app.contains("w.desktopFileName === \"cz.viceverse.serein\""));
+		let app = script(
+			State::Shown,
+			&Target::App("io.github.projecthorizon993.dsrp".into()),
+		);
+		assert!(app.contains("w.desktopFileName === \"io.github.projecthorizon993.dsrp\""));
 		assert!(app.contains("workspace.activeWindow = w"));
-		assert!(valid_app_id("cz.viceverse.serein"));
+		assert!(valid_app_id("io.github.projecthorizon993.dsrp"));
 		assert!(!valid_app_id("../x"));
 		assert!(!valid_app_id(".."));
 		assert!(!valid_app_id("a\"b"));
