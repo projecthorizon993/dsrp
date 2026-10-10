@@ -21,8 +21,13 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 /// Generated from `extensions/` and pinned to a merged commit by the catalog workflow.
-const CATALOG_URL: &str =
-	"https://raw.githubusercontent.com/ViceVerse-cz/Serein/main/extensions/catalog.json";
+///
+/// Sourced from the same repository as the updater, so a fork's builds list that fork's extensions
+/// rather than upstream's. Override with `SEREIN_UPDATE_REPO=owner/name` at build time.
+fn catalog_url() -> String {
+	let repo = option_env!("SEREIN_UPDATE_REPO").unwrap_or("projecthorizon993/dsrp");
+	format!("https://raw.githubusercontent.com/{repo}/main/extensions/catalog.json")
+}
 const MAX_PACKAGE: usize = 16 * 1024 * 1024;
 const MAX_RECORD: usize = MAX_PACKAGE + 64 * 1024;
 const MAX_CATALOG: usize = 1024 * 1024;
@@ -764,7 +769,7 @@ fn run(root: &Path, job: Job, gate: &Gate) -> Result<Event, String> {
 			installed: load(root, account.as_deref(), gate)?,
 		}),
 		Job::RefreshCatalog => {
-			let bytes = download(CATALOG_URL, MAX_CATALOG, gate, Duration::from_secs(15))?;
+			let bytes = download(&catalog_url(), MAX_CATALOG, gate, Duration::from_secs(15))?;
 			cache_catalog(root, &bytes, gate).map(Event::Catalog)
 		}
 		Job::Preview { id, preview } => {

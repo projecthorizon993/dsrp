@@ -1,0 +1,58 @@
+dsrp
+Copyright (c) 2026 dsrp contributors
+
+This product includes software developed by the Serein project.
+
+Serein
+Copyright (c) 2026 Serein contributors
+https://github.com/ViceVerse-cz/Serein
+
+Licensed under either of:
+
+  * Apache License, Version 2.0 (the "Apache License")
+  * MIT License
+
+at your option. This product is distributed under the Apache License, Version 2.0.
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the Apache License, Version 2.0 is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+Apache License for the specific language governing permissions and limitations
+under the License.
+
+The MIT license text is retained at LICENSE-MIT, and the full Apache License,
+Version 2.0 at LICENSE-APACHE.
+
+Modifications
+-------------
+
+This distribution is a modified fork. Changes made by the dsrp project include,
+among others:
+
+  * A built-in mod catalog ported from Vencord's plugin list, with a Built-in Mods
+    settings page, and native ports of individual mods.
+  * OLED dark ("Eclipse") as the default colour preset.
+  * A device-local entitlement override, as a Vencord FakeNitro port.
+  * A tag-driven release workflow, replacing upstream's manual dispatch flow, and
+    dropping macOS from the release matrix because it requires a paid Apple
+    Developer account to sign.
+  * A dependency fix forcing the vendored gpu-allocator onto the same Windows
+    bindings as wgpu-hal, without which the Windows build does not compile.
+
+Third-party notices
+-------------------
+
+Third-party dependencies retain their own licenses, catalogued in
+THIRD_PARTY_NOTICES.md and under assets/licenses/. Notably, some are not
+permissive in the same way:
+
+  * symphonia and hpke-rs are MPL-2.0 (file-level copyleft). They are used
+    unmodified; the corresponding source remains under its original MPL-2.0 terms.
+  * libpulse-sys links against LGPL system libraries dynamically.
+  * Bundled fonts (egui-fonts, Noto Sans CJK) and twemoji assets are under the
+    SIL Open Font License, the Ubuntu Font License, and the Unicode license
+    respectively.
+
+The full text of each required license is retained alongside the corresponding
+asset. The CI job defined in .github/workflows/ci.yml enforces this policy with
+cargo-deny and tests/license-policy.cjs.

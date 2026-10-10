@@ -18,7 +18,38 @@ mod delta;
 #[path = "updater_install.rs"]
 mod install;
 
-const RELEASES: &str = "https://api.github.com/repos/ViceVerse-cz/Serein/releases";
+/// The repository releases are fetched from, and the only place that decides where updates come from.
+///
+/// Overridable at build time so a fork's own builds update from its own releases rather than
+/// upstream's:
+///
+///     SEREIN_UPDATE_REPO=owner/name cargo build --release
+///
+/// A function rather than a `const` because `option_env!` yields an `Option`, and `.unwrap_or` is not
+/// const. Compile-time rather than a preference so a misconfigured build fails the same way every
+/// time instead of silently updating from wherever a user last clicked.
+fn update_repo() -> &'static str {
+	option_env!("SEREIN_UPDATE_REPO").unwrap_or("projecthorizon993/dsrp")
+}
+
+/// The API endpoint listing releases.
+fn releases() -> String {
+	format!("https://api.github.com/repos/{}/releases", update_repo())
+}
+
+/// Where a release asset must come from to be accepted.
+///
+/// This is a security check, not a convenience: the updater refuses any asset whose URL does not
+/// match, so a redirect or a substituted field cannot point the installer at someone else's binary.
+/// It therefore has to be derived from the same [`update_repo`] as the feed, or a fork would download
+/// its own release list and then reject its own assets.
+fn asset_url(tag: &str, name: &str) -> String {
+	format!(
+		"https://github.com/{}/releases/download/{tag}/{name}",
+		update_repo()
+	)
+}
+
 const MAX_METADATA: usize = 2 * 1024 * 1024;
 const MAX_DOWNLOAD: u64 = 512 * 1024 * 1024;
 const CHECK_INTERVAL: Duration = Duration::from_secs(60 * 60);
@@ -294,7 +325,7 @@ impl Updater {
 					.map_err(|_| "Could not prepare the update restart.".to_owned())??;
 					Ok(Outcome::Prepared(helper))
 				});
-				self.status = "Preparing to restart…".into();
+				self.status = "Preparing to restartâ€¦".into();
 			} else if supported
 				&& (download || (view.auto_update && self.auto_download))
 				&& self.package.is_some()
@@ -307,7 +338,7 @@ impl Updater {
 					.expect("a supported platform's checked package has a downloadable archive")
 					.size;
 				self.auto_download = false;
-				self.status = format!("Downloading Serein {}…", package.version);
+				self.status = format!("Downloading Serein {}â€¦", package.version);
 				self.start(runtime, ctx, total, move |cancel, progress| {
 					download_package(package, cancel, progress)
 				});
@@ -327,7 +358,7 @@ impl Updater {
 							.await
 							.map(|(package, log)| Outcome::Checked(package, log))
 					});
-					self.status = "Checking for updates…".into();
+					self.status = "Checking for updatesâ€¦".into();
 				}
 			}
 		}
@@ -686,12 +717,12 @@ fn select_release(
 		{
 			return Err("The release asset metadata is invalid.".into());
 		}
-		let expected = format!(
-			"https://github.com/ViceVerse-cz/Serein/releases/download/{}/{name}",
-			release.tag_name
-		);
+		let expected = asset_url(&release.tag_name, name);
 		if asset.browser_download_url != expected {
-			return Err("The asset is not from the Serein release repository.".into());
+			return Err(format!(
+				"The asset is not from the {} release repository.",
+				update_repo()
+			));
 		}
 		Ok(asset.clone())
 	};
@@ -718,9 +749,9 @@ async fn check_release(
 ) -> Result<(Option<Package>, Vec<ui::updates::LogEntry>), String> {
 	let client = client()?;
 	let endpoint = if nightly {
-		format!("{RELEASES}?per_page=100")
+		format!("{}?per_page=100", releases())
 	} else {
-		format!("{RELEASES}/latest")
+		format!("{}/latest", releases())
 	};
 	let body = bounded_body(&client, &endpoint, MAX_METADATA, &cancel).await?;
 	let releases = if nightly {
@@ -938,6 +969,25 @@ pub fn debug_check() -> Result<(), String> {
 		if trusted_url(&url::Url::parse(address).map_err(|_| "URL parse")?) {
 			return Err("Untrusted origin accepted.".into());
 		}
+	}
+	// The feed and the asset allowlist have to come from the same repository. They are separate
+	// code paths and the asset check is a security control, so pointing a fork's build at its own
+	// releases while leaving the asset check on the old repository would make the updater download a
+	// release list it then refuses every asset from - a silent failure that looks like "no updates
+	// available" rather than a misconfiguration.
+	let feed = releases();
+	let asset = asset_url("v1.2.3", "serein-x.zip");
+	if !feed.contains(update_repo())
+		|| !asset.contains(update_repo())
+		|| feed.contains("ViceVerse-cz")
+		|| asset.contains("ViceVerse-cz")
+	{
+		return Err("The update feed and asset check disagree about the repository.".into());
+	}
+	if !asset.starts_with("https://github.com/")
+		|| !asset.ends_with("/releases/download/v1.2.3/serein-x.zip")
+	{
+		return Err("The asset URL shape changed.".into());
 	}
 	let hash = "00".repeat(32);
 	if checksum(format!("{hash}  ./package.zip\n").as_bytes(), "package.zip")? != [0; 32]

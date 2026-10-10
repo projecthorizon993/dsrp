@@ -1,5 +1,15 @@
 # Serein
 
+> **This distribution is `dsrp`, a modified fork.**
+>
+> Built on [Serein](https://github.com/ViceVerse-cz/Serein) by the Serein contributors, licensed
+> `MIT OR Apache-2.0`. Distributed here under the Apache License, Version 2.0, with the original
+> copyright and license notices retained. See [NOTICE](NOTICE) for what was changed and for the
+> third-party license position - a few dependencies (symphonia, hpke-rs) are MPL-2.0 rather than
+> permissive.
+>
+> Updates for this build are served from this repository's releases, not from upstream's.
+
 <p align="center">
   <a href="https://github.com/ViceVerse-cz/rustcord">
     <img src="docs/preview.png" alt="Serein Native Discord Client" width="900" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
