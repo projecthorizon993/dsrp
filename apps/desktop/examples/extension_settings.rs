@@ -1,4 +1,4 @@
-//! Offline debug check: cargo run --locked -p serein --example extension_settings
+//! Offline debug check: cargo run --locked -p dsrp --example extension_settings
 use eframe::egui;
 
 fn texts(shape: &egui::Shape, labels: &mut Vec<String>) {
