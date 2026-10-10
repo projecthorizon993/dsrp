@@ -1087,8 +1087,10 @@ mod tests {
 				}],
 				..Default::default()
 			});
-			let mut view = MessagingUi::default();
-			view.plain_folder_icon = plain;
+			let mut view = MessagingUi {
+				plain_folder_icon: plain,
+				..Default::default()
+			};
 			let ctx = egui::Context::default();
 			let mut commands = Vec::new();
 			let output = ctx.run_ui(
