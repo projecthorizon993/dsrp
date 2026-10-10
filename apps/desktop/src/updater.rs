@@ -1,4 +1,4 @@
-﻿//! Credential-free release updates. Work and filesystem access stay off the UI thread.
+//! Credential-free release updates. Work and filesystem access stay off the UI thread.
 use eframe::egui;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};

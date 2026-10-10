@@ -1,4 +1,4 @@
-﻿{
+{
     "source_base_commit":  "d22994121c818cd7fb5c48a33d670fc624dc8888",
     "date":  "2026-10-08",
     "new_reply_regression":  "failed against baseline raw URL, passed after fix",

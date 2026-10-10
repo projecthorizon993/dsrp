@@ -1,4 +1,4 @@
-﻿// Generates the Rust catalog literal from D:/project/vencord-plugins.json.
+// Generates the Rust catalog literal from D:/project/vencord-plugins.json.
 // Ids, names and descriptions come from Vencord's own source.
 //
 // Classification is by FEASIBILITY IN A NATIVE CLIENT, never by how Vencord happens to implement a

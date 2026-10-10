@@ -1,4 +1,4 @@
-﻿//! Offline check: cargo run --locked -p ui --features demo --example friend_message
+//! Offline check: cargo run --locked -p ui --features demo --example friend_message
 use client_core::{Command, Envelope, Event, State, auth::Failure, user_actions};
 use egui::{Event as Input, Pos2};
 use model::Id;
