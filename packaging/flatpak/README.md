@@ -37,7 +37,7 @@ flatpak install --user packaging/flatpak/serein.flatpakref
 Once installed via `.flatpakref`, your desktop environment (GNOME Software, KDE Discover)
 and `flatpak update` will automatically discover and install new releases.
 
-If installation reports `No such ref 'app/cz.viceverse.serein/x86_64/master'`,
+If installation reports `No such ref 'app/io.github.projecthorizon993.dsrp/x86_64/master'`,
 check that the hosted `flatpak/repo/summary` exists. Publishing the `.flatpakref`
 alone is insufficient. The package-repository workflow imports the release's
 checksum-verified Flatpak bundle and requires the app ref before uploading the
@@ -53,8 +53,8 @@ or your desktop software manager when a new release is available.
 #### Option B: Standalone bundle (Offline install)
 ```sh
 flatpak install --user ./target/flatpak-build/Serein-linux.flatpak
-flatpak run cz.viceverse.serein
-flatpak uninstall --user cz.viceverse.serein
+flatpak run io.github.projecthorizon993.dsrp
+flatpak uninstall --user io.github.projecthorizon993.dsrp
 ```
 
 ### Login/verification locale troubleshooting
@@ -74,14 +74,14 @@ without signing in:
 
 ```sh
 flatpak --version
-flatpak run --command=sh cz.viceverse.serein -c 'locale; locale -a'
+flatpak run --command=sh io.github.projecthorizon993.dsrp -c 'locale; locale -a'
 ```
 
 Check that all locale categories your desktop selects are installed in Flatpak's
 GNOME runtime, including mixed-language categories. As a one-run diagnostic:
 
 ```sh
-flatpak run --env=LC_ALL=C.UTF-8 --env=RUST_BACKTRACE=1 cz.viceverse.serein
+flatpak run --env=LC_ALL=C.UTF-8 --env=RUST_BACKTRACE=1 io.github.projecthorizon993.dsrp
 ```
 
 The override applies only to that run. Stop at opening the authorization window;
@@ -101,7 +101,7 @@ automatic clipboard fallback on Wayland compositors without the data-control
 protocol. Files are selected through
 the existing desktop portal; home and session-bus access are not granted.
 Caches/preferences use Flatpak's isolated XDG directories under
-`~/.var/app/cz.viceverse.serein`; a native installation's data is not imported.
+`~/.var/app/io.github.projecthorizon993.dsrp`; a native installation's data is not imported.
 Saved credentials still require the host's unlocked Secret Service and never
 fall back to files. That service permission is not an application-specific
 credential isolation guarantee. Audio access permits microphone use, but Serein's
@@ -117,19 +117,19 @@ unavailable under these permissions. Do not grant blanket devices/home access to
 these limitations.
 
 Game Activity binds `discord-ipc-N` in the sandbox's private `$XDG_RUNTIME_DIR`,
-which the host sees as `$XDG_RUNTIME_DIR/.flatpak/cz.viceverse.serein/xdg-run`
+which the host sees as `$XDG_RUNTIME_DIR/.flatpak/io.github.projecthorizon993.dsrp/xdg-run`
 (the same layout as the Vesktop Flatpak). Leftovers from a crash are replaced on
 the next start. Host games need a link, either for the current session:
-`ln -sf "$XDG_RUNTIME_DIR"/{.flatpak/cz.viceverse.serein/xdg-run,}/discord-ipc-0`,
+`ln -sf "$XDG_RUNTIME_DIR"/{.flatpak/io.github.projecthorizon993.dsrp/xdg-run,}/discord-ipc-0`,
 or on every login:
 
 ```sh
 mkdir -p ~/.config/user-tmpfiles.d
-echo 'L %t/discord-ipc-0 - - - - .flatpak/cz.viceverse.serein/xdg-run/discord-ipc-0' > ~/.config/user-tmpfiles.d/discord-rpc.conf
+echo 'L %t/discord-ipc-0 - - - - .flatpak/io.github.projecthorizon993.dsrp/xdg-run/discord-ipc-0' > ~/.config/user-tmpfiles.d/discord-rpc.conf
 systemctl --user enable --now systemd-tmpfiles-setup.service
 ```
 
-Flatpak games additionally need `--filesystem=xdg-run/.flatpak/cz.viceverse.serein:create`
+Flatpak games additionally need `--filesystem=xdg-run/.flatpak/io.github.projecthorizon993.dsrp:create`
 and `--filesystem=xdg-run/discord-ipc-0`. The loopback WebSocket transport needs no setup.
 
 References: [Flatpak sandbox permissions](https://docs.flatpak.org/en/latest/sandbox-permissions.html),
