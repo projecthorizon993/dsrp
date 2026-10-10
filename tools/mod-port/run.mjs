@@ -3,10 +3,12 @@
 //   node tools/mod-port/run.mjs verify     the gate; exits non-zero on any failure
 //   node tools/mod-port/run.mjs propose    ranked backlog, as markdown or JSON
 //   node tools/mod-port/run.mjs scaffold <id> [--note "..."]   the mechanical wiring for a port
+//   node tools/mod-port/run.mjs regenerate  regenerate catalog.rs from gen-catalog.mjs
 //   node tools/mod-port/run.mjs status     one-line summary of the catalog
 //
 // `verify` is the only command CI gates on. `propose` is what the agent reads to pick its next port,
-// and `scaffold` writes the six edits every port needs before any behaviour exists.
+// `scaffold` writes the six edits every port needs before any behaviour exists, and `regenerate` is
+// the only supported way to change the catalog.
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,6 +65,14 @@ if (command === 'verify') {
 			: `scaffold for ${id} was already present; nothing changed`,
 	);
 	console.log(instructions({ id, ...result }));
+} else if (command === 'regenerate') {
+	// The catalog is generated, so this is the only supported way to change it. Hand-editing
+	// catalog.rs is the failure mode that produced 90 false claims in the first place.
+	const output = execFileSync('node', ['tools/mod-port/catalog/gen-catalog.mjs'], {
+		cwd: root,
+		encoding: 'utf8',
+	});
+	console.log(output.trim());
 } else if (command === 'status') {
 	const { summary } = verify(root);
 	console.log(JSON.stringify(summary, null, 2));

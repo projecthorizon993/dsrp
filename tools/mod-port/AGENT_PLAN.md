@@ -71,7 +71,14 @@ If the data is not reachable, stop and say so. Do not invent a plumbing shortcut
 | Portable, not built yet | `Planned` | nothing, it is the default |
 | No client behaviour left to reproduce | `Unsupported` | `UNSUPPORTED` + specific reason |
 
-The catalog is **generated**. Edit `gen-catalog.js`, never `catalog.rs`.
+The catalog is **generated**. Edit `tools/mod-port/catalog/gen-catalog.mjs`, never
+`crates/extensions/src/builtin_plugins/catalog.rs`, then run:
+
+```sh
+node tools/mod-port/run.mjs regenerate
+```
+
+Hand-editing `catalog.rs` is the failure mode that produced 90 false claims in the first place.
 
 `Unsupported` is for a handful whose entire deliverable is a web page or Vencord's own backend. If
 you are adding to it, the honest answer is almost certainly `Planned`.
@@ -112,9 +119,9 @@ through `plural()`.
 ### 7. Regenerate, verify, test
 
 ```sh
-node gen-catalog.js                       # regenerate catalog.rs
-node tools/mod-port/selftest.mjs          # harness correctness
-node tools/mod-port/run.mjs verify        # the gate
+node tools/mod-port/run.mjs regenerate       # regenerate catalog.rs
+node tools/mod-port/selftest.mjs             # harness correctness
+node tools/mod-port/run.mjs verify           # the gate
 cargo test -p ui -p extensions -p local-store
 cargo clippy -p ui -p extensions -p local-store --all-targets
 cargo fmt --all
@@ -169,7 +176,8 @@ note is a good outcome. A mod in `Native` that does not work is the worst possib
 
 | Path | What |
 | --- | --- |
-| `tools/mod-port/run.mjs` | `verify`, `propose`, `scaffold`, `status` |
+| `tools/mod-port/run.mjs` | `verify`, `propose`, `scaffold`, `regenerate`, `status` |
+| `tools/mod-port/catalog/gen-catalog.mjs` | the catalog generator, and the only file to edit to change a classification |
 | `tools/mod-port/verify.mjs` | the gate |
 | `tools/mod-port/propose.mjs` | ranking and proposals |
 | `tools/mod-port/scaffold.mjs` | the six mechanical edits |
