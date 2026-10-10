@@ -122,6 +122,23 @@ const DOT_RADIUS: f32 = 2.5;
 const DOT_STEP: f32 = 7.0;
 const DOT_PERIOD: f64 = 1.2;
 
+/// Whether the dots pulse. Defaults on; the `no_typing_animation` preference turns it off.
+///
+/// A process-wide flag for the same reason as `local_time`'s exact timestamps: the indicator is
+/// painted from deep inside timeline rendering, and threading a preference down to one cosine is not
+/// worth the churn. Set once per frame alongside the other preference syncs.
+static ANIMATE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+/// Whether the typing indicator is allowed to animate.
+pub fn animate() -> bool {
+	ANIMATE.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Applies [`animate`]. Called once per frame alongside the other preference syncs.
+pub fn set_animate(animate: bool) {
+	ANIMATE.store(animate, std::sync::atomic::Ordering::Relaxed);
+}
+
 /// Whether the indicator has anything to say for this conversation right now.
 pub(super) fn active(state: &State, channel: Id, now: Instant) -> bool {
 	segments(state, channel, now).is_some()
@@ -151,11 +168,14 @@ pub(super) fn overlay(
 	// Three pulsing dots, Discord style; the animation runs only while someone is typing and
 	// this window has focus. A background window paints them at rest and asks for no frames.
 	let focused = ui.input(|input| input.focused);
+	// Animation needs both the window focused and the preference on. Without focus it would be
+	// invisible anyway; the preference is what makes it stop on purpose.
+	let pulsing = focused && animate();
 	let time = ui.input(|input| input.time);
 	let dots_left = rect.left() + DOT_RADIUS + 2.0;
 	for index in 0..3 {
 		let phase = (time / DOT_PERIOD - f64::from(index) * 0.18).fract();
-		let pulse = if focused {
+		let pulse = if pulsing {
 			(0.5 - 0.5 * (phase * std::f64::consts::TAU).cos()) as f32
 		} else {
 			0.5
@@ -204,11 +224,12 @@ pub(super) fn overlay(
 	});
 	if let Some(deadline) = state.typing_deadline(now) {
 		// Keep the dots moving until the earliest deadline, then go idle without repaints.
-		// Unfocused, only the expiry itself is worth a frame; the dots hold still until then.
+		// Unfocused, or with animation switched off, only the expiry itself is worth a frame: the
+		// dots are static, so repainting every 80ms would burn a core to redraw an identical image.
 		let frame = std::time::Duration::from_millis(80);
 		let delay = deadline.saturating_duration_since(now);
 		ui.ctx()
-			.request_repaint_after(if focused { delay.min(frame) } else { delay });
+			.request_repaint_after(if pulsing { delay.min(frame) } else { delay });
 	}
 }
 

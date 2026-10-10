@@ -1,4 +1,4 @@
-//! Account-isolated bounded SQLite cache. This is not Discord's authoritative state.
+﻿//! Account-isolated bounded SQLite cache. This is not Discord's authoritative state.
 mod account_presence;
 mod channel_preferences;
 use model::{Id, Message, ReadingPreferences, User};
@@ -50,11 +50,19 @@ pub struct AppPreferences {
 	///
 	/// This is the native form of a Vencord `FakeNitro`: Serein has no web app to patch, but it does
 	/// gate message length, upload size, external stickers and animated emoji on `premium_type`, and
-	/// this removes those gates on this device. It is a preference and not a claim about the account —
+	/// this removes those gates on this device. It is a preference and not a claim about the account â€”
 	/// the real tier is still recorded, and Discord can still refuse something server-side.
 	pub local_nitro: bool,
 	/// Device-local opt-in; older saved preferences deserialize with conversion off.
 	pub convert_emoticons: bool,
+	/// Hold the typing indicator still instead of pulsing it.
+	///
+	/// Device-local opt-in; older saved preferences deserialize with the dots still pulsing.
+	pub no_typing_animation: bool,
+	/// Report elapsed time exactly instead of rounding the way the web client rounds.
+	///
+	/// Device-local opt-in; older saved preferences deserialize with rounding on.
+	pub exact_timestamps: bool,
 	pub hide_title_bar: bool,
 	pub hide_window_decorations: bool,
 	pub primary_color: Option<[u8; 3]>,
@@ -97,6 +105,8 @@ impl Default for AppPreferences {
 			hide_nitro_emojis: false,
 			local_nitro: false,
 			convert_emoticons: false,
+			no_typing_animation: false,
+			exact_timestamps: false,
 			hide_title_bar: false,
 			hide_window_decorations: false,
 			primary_color: None,
@@ -1473,7 +1483,7 @@ impl LocalStore {
 	}
 	/// Valid rows newest first, bounded, plus the IDs of every row that cannot produce a
 	/// usable account. Filtering happens before the bound, so a row the switcher could never
-	/// offer — a damaged ID or avatar written outside this client — cannot hide a real one.
+	/// offer â€” a damaged ID or avatar written outside this client â€” cannot hide a real one.
 	fn ordered_accounts(&self) -> Result<(Vec<model::SavedAccount>, Vec<String>)> {
 		let mut query = self.0.prepare(
 			"SELECT account,name,display,avatar,discriminator,has_token FROM accounts ORDER BY touched DESC,account",
@@ -1896,7 +1906,7 @@ mod tests {
 				.has_token
 		);
 		store.set_account_token(Id(2), true).unwrap();
-		// A row that could never be offered — written outside this client — neither occupies a
+		// A row that could never be offered â€” written outside this client â€” neither occupies a
 		// slot in the bounded roster nor survives the next write.
 		store
 			.0
@@ -3572,7 +3582,7 @@ impl LocalStore {
 				.unwrap()
 				.double_click_reaction_enabled
 		);
-		assert_eq!(preferences.double_click_emoji(), "❤️");
+		assert_eq!(preferences.double_click_emoji(), "â¤ï¸");
 		preferences.double_click_reaction = 3;
 		store.save_reading_preferences(preferences).unwrap();
 		store.0.execute_batch("ALTER TABLE reading_preferences DROP COLUMN double_click_reaction_enabled; PRAGMA user_version=28;").unwrap();
@@ -3588,7 +3598,7 @@ impl LocalStore {
 		assert_eq!(store.reading_preferences().unwrap(), preferences);
 		assert_eq!(
 			store.reading_preferences().unwrap().double_click_emoji(),
-			"🎉"
+			"ðŸŽ‰"
 		);
 		let invalid = ReadingPreferences {
 			double_click_reaction_enabled: false,

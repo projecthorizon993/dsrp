@@ -1170,6 +1170,10 @@ impl MessagingUi {
 						Some(Setting::ShowHiddenChannels) => {
 							(&mut self.show_hidden_channels, plugin.note)
 						}
+						Some(Setting::NoTypingAnimation) => {
+							(&mut self.no_typing_animation, plugin.note)
+						}
+						Some(Setting::ExactTimestamps) => (&mut self.exact_timestamps, plugin.note),
 						// Unreachable while every variant is handled above. A new variant has to be
 						// wired to a real preference before it can reach this page.
 						None => continue,

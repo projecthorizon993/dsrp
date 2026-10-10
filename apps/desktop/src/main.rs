@@ -5979,6 +5979,17 @@ impl Desktop {
 			ui::design::apply(ctx);
 			ctx.request_repaint();
 		}
+		// Relative times are formatted deep inside message rendering, so the preference reaches them
+		// as a flag rather than a parameter. Only writes when it changes, because a store would dirty
+		// the atomic every frame for no reason.
+		if ui::local_time::exact_timestamps() != self.messaging.exact_timestamps {
+			ui::local_time::set_exact_timestamps(self.messaging.exact_timestamps);
+			ctx.request_repaint();
+		}
+		if ui::typing::animate() == self.messaging.no_typing_animation {
+			ui::typing::set_animate(!self.messaging.no_typing_animation);
+			ctx.request_repaint();
+		}
 	}
 	fn sync_window_effects(&mut self) {
 		if !self.transparency_available {

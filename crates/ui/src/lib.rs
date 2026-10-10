@@ -68,7 +68,7 @@ mod guild_folders;
 mod highlight;
 pub mod icons;
 mod invites;
-mod local_time;
+pub mod local_time;
 mod markdown;
 mod member_search;
 mod mentions;
@@ -124,7 +124,7 @@ mod timeline;
 #[cfg(test)]
 mod title_bar_tests;
 pub mod toasts;
-mod typing;
+pub mod typing;
 pub mod updates;
 mod user_direct;
 mod user_menu;
@@ -302,6 +302,10 @@ pub struct MessagingUi {
 	/// driven from, so the entitlement gates follow the same savings path as every other device
 	/// preference.
 	pub local_nitro: bool,
+	/// The typing indicator holds still instead of pulsing.
+	pub no_typing_animation: bool,
+	/// Elapsed time is reported exactly rather than rounded.
+	pub exact_timestamps: bool,
 	/// Filter text on the built-in mods page.
 	pub builtin_mod_query: String,
 	pub hide_title_bar: bool,

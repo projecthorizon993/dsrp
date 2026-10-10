@@ -53,6 +53,8 @@ impl Settings {
 			show_hidden_channels: ui.show_hidden_channels,
 			hide_nitro_emojis: ui.hide_nitro_emojis,
 			local_nitro: ui.local_nitro,
+			no_typing_animation: ui.no_typing_animation,
+			exact_timestamps: ui.exact_timestamps,
 			convert_emoticons: ui.convert_emoticons,
 			hide_title_bar: ui.hide_title_bar,
 			hide_window_decorations: ui.hide_window_decorations,
@@ -97,6 +99,8 @@ impl Settings {
 		ui.show_hidden_channels = value.show_hidden_channels;
 		ui.hide_nitro_emojis = value.hide_nitro_emojis;
 		ui.local_nitro = value.local_nitro;
+		ui.no_typing_animation = value.no_typing_animation;
+		ui.exact_timestamps = value.exact_timestamps;
 		ui.convert_emoticons = value.convert_emoticons;
 		ui.hide_title_bar = value.hide_title_bar;
 		ui.hide_window_decorations = value.hide_window_decorations;

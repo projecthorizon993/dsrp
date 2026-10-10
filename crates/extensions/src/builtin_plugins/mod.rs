@@ -40,6 +40,10 @@ pub enum Setting {
 	LocalNitro,
 	/// Listing channels the account cannot access.
 	ShowHiddenChannels,
+	/// Holding the typing indicator still.
+	NoTypingAnimation,
+	/// Reporting elapsed time without rounding.
+	ExactTimestamps,
 }
 
 /// How faithfully a Vencord plugin can exist here.
@@ -231,7 +235,7 @@ mod tests {
 		// Sanity-bound the claim. These are exact counts on purpose: if a port lands, the count moves
 		// and whoever moved it has to update this, which is the point.
 		assert_eq!(
-			implemented, 20,
+			implemented, 22,
 			"implemented count changed; update this test"
 		);
 	}
