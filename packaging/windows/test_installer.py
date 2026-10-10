@@ -123,7 +123,7 @@ def main():
         running = None
         try:
             # Case-insensitive process recognition, with no GUI, Discord or audio.
-            running_exe = root / "SEREIN.EXE"
+            running_exe = root / "DSRP.EXE"
             shutil.copy2(payload / "dsrp.exe", running_exe)
             ready = root / "ready"
             running = subprocess.Popen([str(running_exe), str(ready)])
