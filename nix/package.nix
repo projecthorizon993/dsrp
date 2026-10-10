@@ -92,7 +92,7 @@
     ];
 in
     rustPlatform.buildRustPackage (finalAttrs: {
-        pname = "serein";
+        pname = "dsrp";
         # Match `cargo build`: release automation versions Cargo.toml, not this file.
         version = (lib.importTOML ../Cargo.toml).workspace.package.version;
 
@@ -105,7 +105,7 @@ in
 
         cargoBuildFlags = [
             "--package"
-            "serein"
+            "dsrp"
         ];
 
         nativeBuildInputs =
@@ -159,10 +159,10 @@ in
         # MPL-2.0 hpke-rs source ship with every binary.
         postInstall =
             ''
-                docs="$out/share/doc/serein"
+                docs="$out/share/doc/dsrp"
             ''
             + lib.optionalString isDarwin ''
-                app="$out/Applications/Serein.app/Contents"
+                app="$out/Applications/dsrp.app/Contents"
                 docs="$app/Resources"
             ''
             + ''
@@ -178,10 +178,10 @@ in
                 cp -R vendor/hpke-rs "$docs/source/"
             ''
             + lib.optionalString isLinux ''
-                install -Dm444 packaging/linux/serein.desktop \
-                  $out/share/applications/cz.viceverse.serein.desktop
-                substituteInPlace $out/share/applications/cz.viceverse.serein.desktop \
-                  --replace-fail "Exec=serein" "Exec=$out/bin/serein"
+                install -Dm444 packaging/linux/dsrp.desktop \
+                  $out/share/applications/io.github.projecthorizon993.dsrp.desktop
+                substituteInPlace $out/share/applications/io.github.projecthorizon993.dsrp.desktop \
+            --replace-fail "Exec=dsrp" "Exec=$out/bin/dsrp"
                 mkdir -p $out/share/icons
                 cp -R packaging/linux/hicolor $out/share/icons/
             ''
@@ -189,22 +189,22 @@ in
             # (privacy usage descriptions, identifier and icon) from the launched binary.
             + lib.optionalString isDarwin ''
                 install -Dm444 packaging/macos/Info.plist "$app/Info.plist"
-                install -Dm444 packaging/macos/Serein.icns "$app/Resources/Serein.icns"
+                install -Dm444 packaging/macos/drp.ico "$app/Resources/dsrp.icns"
                 mkdir -p "$app/MacOS" "$out/share/doc"
-                mv "$out/bin/serein" "$app/MacOS/serein"
-                ln -s "$app/MacOS/serein" "$out/bin/serein"
-                ln -s "$app/Resources" "$out/share/doc/serein"
+                mv "$out/bin/dsrp" "$app/MacOS/dsrp"
+                ln -s "$app/MacOS/dsrp" "$out/bin/dsrp"
+                ln -s "$app/Resources" "$out/share/doc/dsrp"
             '';
 
         meta = {
             description = "Tiny, performant, native Discord client written in Rust (egui/wgpu)";
-            homepage = "https://github.com/ViceVerse-cz/Serein";
+            homepage = "https://github.com/projecthorizon993/dsrp";
             license = with lib.licenses; [
                 mit
                 asl20
             ];
             platforms = lib.platforms.linux ++ lib.platforms.darwin;
-            mainProgram = "serein";
+            mainProgram = "dsrp";
             maintainers = with lib.maintainers; [
                 myamusashi
             ];
