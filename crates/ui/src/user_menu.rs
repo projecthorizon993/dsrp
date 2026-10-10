@@ -365,6 +365,10 @@ mod tests {
 	use super::*;
 	use egui::{Event, Modifiers, PointerButton, Pos2, Rect};
 
+	/// Tall enough for the whole menu. Adding a row to the menu moves the bottom entries, so the
+	/// viewport is named rather than repeated, or the assertion below silently starts clipping.
+	const MENU_VIEWPORT: egui::Vec2 = egui::vec2(320.0, 520.0);
+
 	fn labels(shape: &egui::Shape, out: &mut Vec<(String, Rect)>) {
 		match shape {
 			egui::Shape::Text(t) => out.push((
@@ -397,7 +401,7 @@ mod tests {
 		let mut response = None;
 		let mut output = ctx.run_ui(
 			egui::RawInput {
-				screen_rect: Some(Rect::from_min_size(Pos2::ZERO, egui::vec2(320.0, 420.0))),
+				screen_rect: Some(Rect::from_min_size(Pos2::ZERO, MENU_VIEWPORT)),
 				events,
 				..Default::default()
 			},
@@ -427,7 +431,7 @@ mod tests {
 		let mut response = None;
 		let mut output = ctx.run_ui(
 			egui::RawInput {
-				screen_rect: Some(Rect::from_min_size(Pos2::ZERO, egui::vec2(320.0, 420.0))),
+				screen_rect: Some(Rect::from_min_size(Pos2::ZERO, MENU_VIEWPORT)),
 				events,
 				..Default::default()
 			},
@@ -486,14 +490,19 @@ mod tests {
 			.find(|(label, _)| label == "Copy Link")
 			.unwrap_or_else(|| panic!("the menu must offer a profile link: {text:?}"))
 			.1;
-		let (_, copied) = frame_copying(
-			&ctx,
-			&state,
-			user,
-			pointer(rect.center(), PointerButton::Primary, true),
-			&mut profile,
-			&mut action,
-		);
+		// egui reports a click on release, so the press and the release are two frames.
+		let mut copied = Vec::new();
+		for pressed in [true, false] {
+			let (_, out) = frame_copying(
+				&ctx,
+				&state,
+				user,
+				pointer(rect.center(), PointerButton::Primary, pressed),
+				&mut profile,
+				&mut action,
+			);
+			copied.extend(out);
+		}
 		assert_eq!(
 			copied,
 			vec![format!("https://discord.com/users/{}", user.id)],
@@ -591,10 +600,7 @@ mod tests {
 						.find(|(s, _)| s == expected)
 						.unwrap_or_else(|| panic!("Missing {expected}: {text:?}"))
 						.1;
-					assert!(
-						Rect::from_min_size(Pos2::ZERO, egui::vec2(320.0, 420.0))
-							.contains_rect(rect)
-					);
+					assert!(Rect::from_min_size(Pos2::ZERO, MENU_VIEWPORT).contains_rect(rect));
 				}
 				let pos = text.iter().find(|(s, _)| s == label).unwrap().1.center();
 				for pressed in [true, false] {
