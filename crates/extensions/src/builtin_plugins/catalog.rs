@@ -901,9 +901,9 @@ pub const ALL: &[Plugin] = &[
 		id: "replyTimestamp",
 		name: "ReplyTimestamp",
 		description: "Shows a timestamp on replied-message previews",
-		port: Port::Planned,
-		note: "Shows a timestamp on replied-message previews",
-		setting: None,
+		port: Port::NativeOptIn,
+		note: "A replied-message preview carries the time it quotes, from loaded history only",
+		setting: Some(Setting::ReplyTimestamp),
 	},
 	Plugin {
 		id: "revealAllSpoilers",

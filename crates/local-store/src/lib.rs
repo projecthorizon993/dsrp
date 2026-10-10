@@ -97,6 +97,8 @@ pub struct AppPreferences {
 	pub no_server_emojis: bool,
 	/// Device-local opt-in for the `plainFolderIcon` mod; older saved preferences deserialize with it off.
 	pub plain_folder_icon: bool,
+	/// Device-local opt-in for the `replyTimestamp` mod; older saved preferences deserialize with it off.
+	pub reply_timestamp: bool,
 }
 impl Default for AppPreferences {
 	fn default() -> Self {
@@ -111,6 +113,7 @@ impl Default for AppPreferences {
 			hide_nitro_emojis: false,
 			local_nitro: false,
 			convert_emoticons: false,
+			reply_timestamp: false,
 			plain_folder_icon: false,
 			no_server_emojis: false,
 			copy_emoji_markdown: false,

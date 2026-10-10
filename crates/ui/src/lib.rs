@@ -121,6 +121,9 @@ mod thumbhash;
 #[cfg(feature = "demo")]
 pub use polls::debug_poll_check;
 mod timeline;
+/// The reply-preview timestamp flag, re-exported so the desktop can set it without the rest of the
+/// timeline becoming public API.
+pub use timeline::{reply_timestamps, set_reply_timestamps};
 #[cfg(test)]
 mod title_bar_tests;
 pub mod toasts;
@@ -501,6 +504,8 @@ pub struct MessagingUi {
 	pub no_server_emojis: bool,
 	/// Paint server folder tiles without the mosaic of server icons.
 	pub plain_folder_icon: bool,
+	/// Carry the sent time on a replied-message preview.
+	pub reply_timestamp: bool,
 }
 
 /// Context strip (reply/edit) drawn as the rounded top of the composer block.

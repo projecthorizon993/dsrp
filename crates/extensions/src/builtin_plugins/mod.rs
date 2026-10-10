@@ -44,6 +44,8 @@ pub enum Setting {
 	NoTypingAnimation,
 	/// Reporting elapsed time without rounding.
 	ExactTimestamps,
+	/// Carrying the sent time on a replied-message preview.
+	ReplyTimestamp,
 	/// Painting folder tiles without the server-icon mosaic.
 	PlainFolderIcon,
 	/// Leaving server emoji out of the `:` autocomplete list.
@@ -241,7 +243,7 @@ mod tests {
 		// Sanity-bound the claim. These are exact counts on purpose: if a port lands, the count moves
 		// and whoever moved it has to update this, which is the point.
 		assert_eq!(
-			implemented, 27,
+			implemented, 28,
 			"implemented count changed; update this test"
 		);
 	}

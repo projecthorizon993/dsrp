@@ -55,6 +55,7 @@ impl Settings {
 			local_nitro: ui.local_nitro,
 			no_typing_animation: ui.no_typing_animation,
 			exact_timestamps: ui.exact_timestamps,
+			reply_timestamp: ui.reply_timestamp,
 			plain_folder_icon: ui.plain_folder_icon,
 			no_server_emojis: ui.no_server_emojis,
 			copy_emoji_markdown: ui.copy_emoji_markdown,
@@ -104,6 +105,7 @@ impl Settings {
 		ui.local_nitro = value.local_nitro;
 		ui.no_typing_animation = value.no_typing_animation;
 		ui.exact_timestamps = value.exact_timestamps;
+		ui.reply_timestamp = value.reply_timestamp;
 		ui.plain_folder_icon = value.plain_folder_icon;
 		ui.no_server_emojis = value.no_server_emojis;
 		ui.copy_emoji_markdown = value.copy_emoji_markdown;

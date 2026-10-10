@@ -5996,6 +5996,11 @@ impl Desktop {
 			ui::emoji_details::set_markdown_copy(self.messaging.copy_emoji_markdown);
 			ctx.request_repaint();
 		}
+		// The reply preview is painted from inside `TimelineView`, which cannot see the preferences.
+		if ui::reply_timestamps() != self.messaging.reply_timestamp {
+			ui::set_reply_timestamps(self.messaging.reply_timestamp);
+			ctx.request_repaint();
+		}
 	}
 	fn sync_window_effects(&mut self) {
 		if !self.transparency_available {

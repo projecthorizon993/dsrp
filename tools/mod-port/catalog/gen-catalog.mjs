@@ -102,6 +102,10 @@ const OPT_IN = {
     note: 'A server folder paints a plain tile, keeping its colour, unread count and voice badge',
     setting: 'PlainFolderIcon',
   },
+  replyTimestamp: {
+    note: 'A replied-message preview carries the time it quotes, from loaded history only',
+    setting: 'ReplyTimestamp',
+  },
 };
 
 // Notes for planned entries whose Vencord description undersells what porting them here would take.

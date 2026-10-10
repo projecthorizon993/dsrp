@@ -434,6 +434,37 @@ fn timestamp(id: Id) -> time::OffsetDateTime {
 			.expect("snowflake timestamp is in range"),
 	)
 }
+
+/// Whether a replied-message preview carries the time it was sent. See [`reply_timestamps`].
+static REPLY_TIMESTAMPS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether the quoted message's sent time is shown on a reply preview.
+///
+/// A process-wide flag for the same reason as `local_time`'s exact timestamps: the reply row is
+/// painted from inside `TimelineView`, which has no route to the saved preferences. Set once per
+/// frame alongside the other preference syncs.
+pub fn reply_timestamps() -> bool {
+	REPLY_TIMESTAMPS.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Applies [`reply_timestamps`]. Called once per frame alongside the other preference syncs.
+pub fn set_reply_timestamps(reply: bool) {
+	REPLY_TIMESTAMPS.store(reply, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// A clock today, a date before it. Local time, never a relative phrase: a preview sits above the
+/// message it quotes, and "2 hours ago" there is stale the moment the conversation moves on.
+///
+/// Shared with the unread banner so the two cannot drift into different formats.
+pub(crate) fn short_time(id: Id) -> String {
+	let at = timestamp(id);
+	let clock = format!("{:02}:{:02}", at.hour(), at.minute());
+	if at.date() == crate::local_time::now().date() {
+		clock
+	} else {
+		format!("{} {}, {clock}", at.month(), at.day())
+	}
+}
 /// Discord's Nitro boost pink; not part of any theme palette.
 const BOOST: egui::Color32 = egui::Color32::from_rgb(0xff, 0x73, 0xfa);
 /// Gutter glyph and tint for a system message type, mirroring Discord's system rows.
@@ -1650,13 +1681,7 @@ impl TimelineView {
 			.is_some_and(|read| state.timeline.get(read).is_some());
 		let more =
 			read_through.is_none() && first_loaded && !marker_loaded && !state.older_exhausted;
-		let at = timestamp(start);
-		let clock = format!("{:02}:{:02}", at.hour(), at.minute());
-		let time = if at.date() == crate::local_time::now().date() {
-			clock
-		} else {
-			format!("{} {}, {clock}", at.month(), at.day())
-		};
+		let time = short_time(start);
 		Some(crate::i18n::translate_count(
 			if more {
 				"timeline-unread-banner-new-since-more"
@@ -2563,6 +2588,29 @@ impl TimelineView {
 																..Default::default()
 															},
 														);
+														// `replyTimestamp`: the time the quoted message was
+														// sent, so a preview reads as a quotation rather than
+														// an unattributed line. Only ever from loaded
+														// content - the reply target may not be in this
+														// session's window, and fetching it to fill in a
+														// timestamp is not worth a request.
+														if reply_timestamps() {
+															preview.append(
+																&format!(
+																	"{}  ",
+																	short_time(original.id)
+																),
+																0.0,
+																egui::TextFormat {
+																	font_id:
+																		egui::FontId::proportional(
+																			13.0,
+																		),
+																	color: colors.muted,
+																	..Default::default()
+																},
+															);
+														}
 														if crate::embeds::has_spoilers(original) {
 															preview.append(
 																"Spoiler",
@@ -6803,6 +6851,93 @@ mod tests {
 				);
 			}
 		}
+	}
+
+	#[test]
+	fn a_reply_preview_carries_the_quoted_time_only_when_asked() {
+		fn texts(shape: &egui::Shape, out: &mut Vec<String>) {
+			match shape {
+				egui::Shape::Text(t) => out.push(t.galley.job.text.clone()),
+				egui::Shape::Vec(shapes) => {
+					for shape in shapes {
+						texts(shape, out);
+					}
+				}
+				_ => {}
+			}
+		}
+		/// `text_message(1)` is the Discord epoch, so its short time is `January 1, 00:00`. Spelled out
+		/// rather than a bare clock, because the message rows themselves print `00:00` and a substring
+		/// match on that would pass with the switch off.
+		const QUOTED: &str = "@Robin  January 1, 00:00";
+		let ctx = egui::Context::default();
+		crate::design::apply(&ctx);
+		ctx.set_visuals(egui::Visuals::dark());
+		let render = |reply: bool| -> Vec<String> {
+			set_reply_timestamps(reply);
+			let mut state = test_support::demo_state();
+			state.timeline.clear();
+			state.read_state.reset();
+			let original = text_message(1);
+			state
+				.timeline
+				.insert(original.clone(), false, false)
+				.unwrap();
+			let mut quoting = text_message(120_000 << 22);
+			quoting.content = "Quoting that".into();
+			quoting.reply_to = Some(original.id);
+			state.timeline.insert(quoting, false, false).unwrap();
+			let mut view = TimelineView::default();
+			let mut avatars = crate::avatars::Avatars::default();
+			let mut painted = vec![];
+			// Several frames, so hover animations settle and the row is laid out rather than empty.
+			for _ in 0..4 {
+				let mut editing = None;
+				let output = ctx.run_ui(
+					egui::RawInput {
+						screen_rect: Some(egui::Rect::from_min_size(
+							egui::Pos2::ZERO,
+							egui::vec2(900.0, 600.0),
+						)),
+						..Default::default()
+					},
+					|ui| {
+						view.show(
+							ui,
+							&mut state,
+							&mut editing,
+							&mut None,
+							(
+								&mut avatars,
+								&mut crate::profiles::ProfileSession::default(),
+							),
+							None,
+						)
+					},
+				);
+				painted.clear();
+				for shape in &output.shapes {
+					texts(&shape.shape, &mut painted);
+				}
+				output.drop_without_applying_deltas();
+			}
+			painted
+		};
+
+		// Without the preference the preview says who was quoted and nothing more.
+		let without = render(false);
+		assert!(without.iter().any(|t| t.contains("Quoting that")));
+		assert!(
+			!without.iter().any(|t| t.contains(QUOTED)),
+			"the quoted time must not appear unless it was asked for: {without:?}"
+		);
+		// With it, the time rides along. Same conversation, same message: only the switch moved.
+		let with = render(true);
+		assert!(
+			with.iter().any(|t| t.contains(QUOTED)),
+			"a reply preview must carry the time it quotes: {with:?}"
+		);
+		set_reply_timestamps(false);
 	}
 
 	#[test]
