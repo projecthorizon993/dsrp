@@ -223,16 +223,33 @@ fn resolve_data_dir(configured: Option<OsString>, default: Option<PathBuf>) -> R
 	}
 }
 
-/// Keeps source-build data persistent but separate from installed Serein data.
+/// Keeps source-build data persistent but separate from installed client data.
 fn default_data_dir() -> Option<PathBuf> {
 	#[cfg(feature = "development-data")]
 	{
-		dirs::data_local_dir().map(|root| root.join("serein-development"))
+		dirs::data_local_dir().map(|root| root.join("dsrp-development"))
 	}
 	#[cfg(not(feature = "development-data"))]
 	{
-		dirs::data_local_dir().map(|root| root.join("serein"))
+		dirs::data_local_dir().map(|root| installed_data_dir(&root))
 	}
+}
+
+/// Which directory an installed build reads and writes.
+///
+/// An existing `serein` directory wins, because that is where the login token lives. Renaming a
+/// directory that holds a session token is not cosmetic: an install that moved to `dsrp` without
+/// falling back starts empty and looks signed out, with the token still sitting in the old place and
+/// no UI to explain it.
+///
+/// The choice is one-way. A fresh install creates `dsrp` and never sees `serein`, so the old
+/// directory is only ever read, never written - which is also why a test can argue about it at all.
+pub fn installed_data_dir(root: &Path) -> PathBuf {
+	let legacy = root.join("serein");
+	if legacy.is_dir() {
+		return legacy;
+	}
+	root.join("dsrp")
 }
 
 /// Creates only missing directories privately on Unix and preserves existing permissions.
@@ -1602,6 +1619,42 @@ impl LocalStore {
 }
 #[cfg(test)]
 mod tests {
+	/// An install made before the rename must keep reading its own directory.
+	///
+	/// The data directory holds the login token, so a rename that does not fall back starts the app
+	/// signed out with the token still present in `serein`, and there is no UI to explain that.
+	#[test]
+	fn an_existing_serein_data_directory_is_still_read() {
+		let root = scratch();
+		let legacy = root.join("serein");
+		std::fs::create_dir_all(&legacy).unwrap();
+		std::fs::write(legacy.join("token"), b"kept").unwrap();
+		assert_eq!(installed_data_dir(&root), legacy);
+		// The old directory is read, not written: no `dsrp` appears beside it.
+		assert!(!root.join("dsrp").exists());
+	}
+
+	#[test]
+	fn a_fresh_install_gets_the_new_directory() {
+		let root = scratch();
+		let fresh = root.join("dsrp");
+		assert_eq!(installed_data_dir(&root), fresh);
+		// And it must not conjure the legacy one into existence just by looking.
+		assert!(!root.join("serein").exists());
+	}
+
+	/// A unique empty directory per test. `std::env::temp_dir()` is stable across the two assertions,
+	/// and the name is process- and test-qualified so concurrent runs cannot collide.
+	fn scratch() -> std::path::PathBuf {
+		let root = std::env::temp_dir().join(format!(
+			"dsrp-local-store-test-{}-{}",
+			std::process::id(),
+			line!()
+		));
+		std::fs::create_dir_all(&root).unwrap();
+		root
+	}
+
 	#[test]
 	fn custom_font_migration_preserves_saved_data_and_accepts_cjk_sizes() {
 		let connection = rusqlite::Connection::open_in_memory().unwrap();
