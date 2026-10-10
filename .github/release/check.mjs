@@ -53,8 +53,17 @@ assert(nightlyNotes.includes('category and channel permission settings'));
 assert(!nightlyNotes.includes('notification sounds'));
 
 const workflow = load(readFileSync('.github/workflows/release.yml', 'utf8'));
-assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch']);
-assert(workflow.jobs.build.strategy.matrix.os.includes('windows-11-arm'));
+// The tag is the version, and pushing one is the only way to publish. There is deliberately no
+// manual dispatch path: a release that nothing is tagged for is a release nobody can point at.
+assert.deepEqual(Object.keys(workflow.on), ['push']);
+assert.deepEqual(workflow.on.push.tags, ['v[0-9]+.[0-9]+.[0-9]+']);
+// macOS is absent on purpose, so assert that rather than letting it creep back in unnoticed: it
+// cannot be signed without a paid Apple Developer account.
+const platforms = workflow.jobs.build.strategy.matrix.os;
+assert(platforms.includes('windows-latest'));
+assert(platforms.includes('windows-11-arm'));
+assert(!platforms.some((os) => String(os).includes('macos')));
+assert(workflow.jobs.publish.needs.includes('linux'));
 for (const job of Object.values(workflow.jobs)) {
   for (const step of job.steps ?? []) {
     if (step.run && step.shell !== 'pwsh') execFileSync('bash', ['-n'], { input: step.run });
