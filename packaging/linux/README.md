@@ -114,7 +114,7 @@ scripts, background updater, automatic launch or user-profile writes are added.
 For a deliberate manual installation, use the local file:
 
 ```sh
-sudo apt install --reinstall ./dist/serein_0.1.0-1_amd64.deb
+sudo apt install --reinstall ./dist/serein_0.2.0-1_amd64.deb
 ```
 
 These are user installation instructions; the build and smoke checks do not run

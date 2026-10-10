@@ -1,33 +1,28 @@
-name: Release (manual)
-run-name: ${{ inputs.channel }} release by @${{ github.actor }}
+name: Release
+run-name: Release ${{ github.ref_name }}
 
+# Tag-driven: the tag is the version. Push vX.Y.Z and this builds that tag and publishes a GitHub
+# Release. There is deliberately no semantic-release step here - upstream computed a version from
+# commits and created the tag itself, which meant the tag and the commit it described could disagree.
+# Making the tag the single source of truth removes that class of mistake, and `prepare` fails the
+# release if the tag and the manifests ever do drift.
 on:
-  workflow_dispatch:
-    inputs:
-      channel:
-        description: Release channel
-        type: choice
-        options: [nightly, production]
-        default: nightly
-        required: true
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
 
 permissions:
   contents: read
 
-env:
-  RELEASE_CHANNEL: ${{ inputs.channel }}
-
 concurrency:
-  group: serein-release
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     outputs:
-      release: ${{ steps.version.outputs.release }}
       tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -40,31 +35,21 @@ jobs:
           bun-version: 1.4.2
       - run: bun install --cwd .github/release --frozen-lockfile --ignore-scripts
       - run: bun .github/release/check.mjs
-      - name: Calculate semantic version and notes
+      - name: Check the tag against the manifest version
         id: version
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bun .github/release/release.mjs plan
-      - name: Require Mac signing credentials before building
-        if: steps.version.outputs.release == 'true'
-        env:
-          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
-          for name in MACOS_CERTIFICATE_BASE64 MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_SPECIFIC_PASSWORD; do
-            test -n "${!name}" || { echo "Missing Actions secret: $name"; exit 1; }
-          done
-      - name: Apply planned version to manifests
-        if: steps.version.outputs.release == 'true'
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: python3 .github/release/version.py "$VERSION"
+          set -eu
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          manifest="$(grep -m1 -E '^version = ' Cargo.toml | cut -d'"' -f2)"
+          if [ "$version" != "$manifest" ]; then
+            echo "::error::Tag $tag does not match the workspace version $manifest."
+            echo "Bump Cargo.toml (python3 .github/release/version.py $version) or tag v$manifest."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7.0.1
-        if: steps.version.outputs.release == 'true'
         with:
           name: release-manifests
           path: |
@@ -72,22 +57,19 @@ jobs:
             Cargo.lock
             fuzz/Cargo.lock
             packaging/macos/Info.plist
-            target/release-plan.json
           if-no-files-found: error
           retention-days: 14
 
   build:
     needs: prepare
-    if: needs.prepare.outputs.release == 'true'
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-11-arm]
+        os: [windows-latest, windows-11-arm]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
       TAG: ${{ needs.prepare.outputs.tag }}
-      VERSION: ${{ needs.prepare.outputs.version }}
       PACKAGE_ROOT: dist
     defaults:
       run:
@@ -104,7 +86,6 @@ jobs:
         with:
           components: rustfmt, clippy
       - name: Install NSIS
-        if: runner.os == 'Windows'
         run: choco install nsis --no-progress -y
       - name: Offline checks
         run: cargo xtask check
@@ -117,27 +98,16 @@ jobs:
           cargo xtask package
           mkdir release-assets
           echo "ASSET=serein-$TAG-$RUNNER_OS-$RUNNER_ARCH" >> "$GITHUB_ENV"
-      - name: Sign, notarize and verify Mac app
-        if: runner.os == 'macOS'
-        env:
-          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        run: bash packaging/macos/sign-release.sh "$PACKAGE_ROOT/Serein.app"
-      - name: Archive Mac package
-        if: runner.os == 'macOS'
-        run: ditto -c -k --sequesterRsrc "$PACKAGE_ROOT" "release-assets/$ASSET.zip"
       - name: Archive Windows package
-        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           Compress-Archive -Path "$env:PACKAGE_ROOT/*" -DestinationPath "release-assets/$env:ASSET.zip"
           $installer = Get-ChildItem -Path "dist-installer/*-setup.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($installer) {
             Copy-Item -LiteralPath $installer.FullName -Destination "release-assets/$env:ASSET-Setup.exe"
+          } else {
+            Write-Error "NSIS produced no installer"
+            exit 1
           }
       - uses: actions/upload-artifact@v7.0.1
         with:
@@ -148,7 +118,6 @@ jobs:
 
   linux:
     needs: prepare
-    if: needs.prepare.outputs.release == 'true'
     uses: ./.github/workflows/linux-packages.yml
     with:
       release: true
@@ -164,18 +133,6 @@ jobs:
       GH_REPO: ${{ github.repository }}
       TAG: ${{ needs.prepare.outputs.tag }}
     steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: oven-sh/setup-bun@v2.2.0
-        with:
-          bun-version: 1.4.2
-      - run: bun install --cwd .github/release --frozen-lockfile --ignore-scripts
-      - uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-manifests
-          path: .
       - uses: actions/download-artifact@v8.0.1
         with:
           pattern: serein-*
@@ -184,22 +141,11 @@ jobs:
       - name: Checksums
         working-directory: release-assets
         run: sha256sum ./* > SHA256SUMS.txt
-      - name: Commit versions and publish semantic release with notes and assets
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: bun .github/release/release.mjs publish
-
-  repositories:
-    needs: [prepare, build, linux, publish]
-    if: needs.prepare.outputs.release == 'true'
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    uses: ./.github/workflows/package-repositories.yml
-    with:
-      tag: ${{ needs.prepare.outputs.tag }}
-      channel: ${{ inputs.channel }}
-      base_url: https://viceverse-cz.github.io/Serein
-      deploy: true
-    secrets: inherit
+      - name: Publish the GitHub Release
+        run: |
+          set -eu
+          test -n "$(ls -A release-assets)"
+          gh release create "$TAG" \
+            --title "Serein $TAG" \
+            --generate-notes \
+            release-assets/*
