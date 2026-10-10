@@ -1,0 +1,58 @@
+name: Mod port agent
+run-name: Mod catalog gate and backlog
+
+# The catalog started life claiming 90 of 166 Vencord mods were ported when one was, and calling 146
+# of them impossible because Vencord implements them with a stylesheet. Both were invisible to the
+# compiler, because both were strings in a generated file. This workflow is what stops them coming
+# back: it re-derives the catalog, gates every claim in it, and keeps the porting backlog ranked.
+on:
+  push:
+    branches: [main]
+    paths:
+      - crates/extensions/src/builtin_plugins/**
+      - tools/mod-port/**
+      - crates/local-store/src/lib.rs
+      - crates/ui/src/lib.rs
+  pull_request:
+    paths:
+      - crates/extensions/src/builtin_plugins/**
+      - tools/mod-port/**
+      - crates/local-store/src/lib.rs
+      - crates/ui/src/lib.rs
+  schedule:
+    # Mondays, so a dependency bump upstream in Vencord shows up as a changed backlog rather than
+    # waiting for the next port.
+    - cron: '37 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mod-port-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Catalog claims are backed by code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: '22'
+      - name: Harness self-tests
+        # The gate is only worth anything if it reads the catalog correctly. A parser that silently
+        # misparsed every setting once already, and disagreed with the compiler to prove it.
+        run: node tools/mod-port/selftest.mjs
+      - name: Verify every catalog claim
+        run: node tools/mod-port/run.mjs verify
+      - name: Publish the porting backlog
+        run: node tools/mod-port/run.mjs propose 40 > mod-backlog.md
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: mod-backlog
+          path: mod-backlog.md
+          retention-days: 14

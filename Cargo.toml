@@ -1,5 +1,10 @@
 [workspace]
 members = ["apps/desktop", "crates/*", "tools/*"]
+# `tools/*` is a glob, so every directory there is treated as a Rust workspace member. The mod-port
+# harness is Node, not Rust, and a missing Cargo.toml makes every cargo command in the repo fail with
+# an unhelpful manifest error. Named here rather than hidden elsewhere so the next non-Rust tool in
+# tools/ gets the same treatment instead of rediscovering this.
+exclude = ["tools/mod-port"]
 default-members = ["apps/desktop"]
 resolver = "3"
 
