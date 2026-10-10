@@ -1,69 +1,36 @@
-// Offline release smoke; never invokes semantic-release publishing or Apple services.
+// Offline release smoke: checks the release contract, not the semantic-release libraries.
+//
+// The tag is the version. `gh release create --generate-notes` publishes, so there is no
+// version-planning or note-rendering code left on this path to test - what is worth checking is
+// that release.yml still says what it is supposed to say, that every shell step parses, and that
+// version.py moves every manifest together. Never invokes Apple services or publishes anything.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { load } from 'js-yaml';
-import { analyzeCommits } from '@semantic-release/commit-analyzer';
-import { generateNotes } from '@semantic-release/release-notes-generator';
-import getLastRelease from './node_modules/semantic-release/lib/get-last-release.js';
-import { generateReleaseNotes } from './notes.mjs';
-
-const logger = { log() {} };
-for (const [message, expected] of [
-  ['fix(ui): fix scrolling', 'patch'], ['feat(ui): add search', 'minor'],
-  ['feat!: change storage format', 'major'], ['docs: update guide', null],
-]) {
-  assert.equal(await analyzeCommits({ preset: 'conventionalcommits' }, {
-    cwd: process.cwd(), logger, commits: [{ message, hash: 'abcdef1' }],
-  }), expected);
-}
-assert.equal(getLastRelease({
-  branch: { type: 'release', tags: [
-    { version: '1.1.0-nightly.20260913.9', gitTag: 'v1.1.0-nightly.20260913.9', channels: [null] },
-    { version: '1.0.0', gitTag: 'v1.0.0', channels: [null] },
-  ] }, options: { tagFormat: 'v${version}' },
-}).version, '1.0.0');
-const notes = await generateNotes({ preset: 'conventionalcommits' }, {
-  cwd: process.cwd(), logger, options: { repositoryUrl: 'https://github.com/example/serein' },
-  commits: [{ message: 'fix(ui): fix scrolling', hash: 'abcdef1' }],
-  lastRelease: { gitTag: 'v1.0.0' }, nextRelease: { version: '1.0.1', gitTag: 'v1.0.1' },
-});
-assert(notes.includes('fix scrolling'));
-
-const releaseNotesContext = {
-  cwd: process.cwd(), logger, options: { repositoryUrl: 'https://github.com/ViceVerse-cz/Serein' },
-  commits: [
-    { hash: 'eb98a663421d6e142fe0f5f3be6f175a1b95a8e9', author: { name: 'Release Note Author', email: 'release-note-author@example.invalid' }, message: 'feat(ui): add category and channel permission settings (#149)' },
-    { hash: 'baec1dfc7b5755b0f063a1ea16d05f81936d0dc0', author: { name: 'Audio Note Author', email: 'audio-note-author@example.invalid' }, message: 'feat(audio): bundle notification sounds (#140)' },
-  ],
-  lastRelease: { gitTag: 'v1.0.0' },
-  nextRelease: { version: '1.0.0', gitHead: 'v1.0.0-nightly.10.1' },
-};
-const prodNotes = await generateReleaseNotes('production', { preset: 'conventionalcommits' }, releaseNotesContext);
-assert(prodNotes.includes('category and channel permission settings'));
-assert(prodNotes.includes('notification sounds'));
-assert(prodNotes.includes('by Release Note Author'));
-assert(prodNotes.includes('[#149](https://github.com/ViceVerse-cz/Serein/pull/149)'));
-assert(prodNotes.includes('## New Contributors'));
-assert(prodNotes.indexOf('## New Contributors') > prodNotes.indexOf('notification sounds'));
-assert(prodNotes.includes('Release Note Author made their first contribution'));
-
-const nightlyNotes = await generateReleaseNotes('nightly', { preset: 'conventionalcommits' }, releaseNotesContext);
-assert(nightlyNotes.includes('category and channel permission settings'));
-assert(!nightlyNotes.includes('notification sounds'));
 
 const workflow = load(readFileSync('.github/workflows/release.yml', 'utf8'));
+
 // The tag is the version, and pushing one is the only way to publish. There is deliberately no
 // manual dispatch path: a release that nothing is tagged for is a release nobody can point at.
 assert.deepEqual(Object.keys(workflow.on), ['push']);
 assert.deepEqual(workflow.on.push.tags, ['v[0-9]+.[0-9]+.[0-9]+']);
-// macOS is absent on purpose, so assert that rather than letting it creep back in unnoticed: it
-// cannot be signed without a paid Apple Developer account.
+
+// Windows x64 and arm64 are both still built.
 const platforms = workflow.jobs.build.strategy.matrix.os;
 assert(platforms.includes('windows-latest'));
 assert(platforms.includes('windows-11-arm'));
-assert(!platforms.some((os) => String(os).includes('macos')));
+// macOS is absent on purpose, so assert that rather than letting it creep back in unnoticed: it
+// cannot be signed without a paid Apple Developer account.
+assert(!platforms.some(os => String(os).includes('macos')));
+// A release must not be published from Windows artifacts alone.
 assert(workflow.jobs.publish.needs.includes('linux'));
+// prepare gates everything, and it is the job that compares the tag to the manifest version.
+assert(workflow.jobs.build.needs === 'prepare');
+assert(workflow.jobs.linux.needs === 'prepare');
+
+// Every inline shell step has to parse. A typo here surfaces as an opaque failure halfway through a
+// release build, which is the most expensive place to find out.
 for (const job of Object.values(workflow.jobs)) {
   for (const step of job.steps ?? []) {
     if (step.run && step.shell !== 'pwsh') execFileSync('bash', ['-n'], { input: step.run });
@@ -71,6 +38,10 @@ for (const job of Object.values(workflow.jobs)) {
 }
 execFileSync('bash', ['-n', 'packaging/macos/sign-release.sh']);
 execFileSync('bash', ['packaging/macos/test_sign_release.sh'], { stdio: 'inherit' });
+
+// version.py is what keeps Cargo.toml, both lockfiles and the Mac plist on one version. If it ever
+// rewrites a dependency section or misses a local package, a release ships with manifests that
+// disagree, so assert the exact package set is preserved.
 execFileSync(process.env.PYTHON || 'python3', ['-c', `
 import glob, os, pathlib, shutil, subprocess, tempfile, tomllib
 root = pathlib.Path.cwd()
@@ -95,4 +66,5 @@ with tempfile.TemporaryDirectory() as directory:
     import plistlib
     assert plistlib.loads(pathlib.Path('packaging/macos/Info.plist').read_bytes())['CFBundleShortVersionString'] == '1.2.3'
 `], { stdio: 'inherit' });
-console.log('Release smoke passed: semantic bumps/notes, nightly isolation, manifest/lock versions, YAML and shell syntax.');
+
+console.log('Release smoke passed: tag trigger, platform matrix, job gating, shell syntax, manifest/lock versions.');
