@@ -131,7 +131,7 @@ def package(root, application_version):
         debian.mkdir(exist_ok=True)
         (debian / "control").write_text(
             "Source: dsrp\nSection: net\nPriority: optional\n"
-            "Maintainer: Serein contributors <noreply@github.com>\n\n"
+            "Maintainer: dsrp contributors <noreply@github.com>\n\n"
             "Package: dsrp\nArchitecture: any\nDescription: Unofficial native Discord client\n",
             encoding="utf-8")
         (stage / "DEBIAN").mkdir()
@@ -148,7 +148,7 @@ def package(root, application_version):
         control.write_text(
             f"Package: dsrp\nVersion: {version}\nArchitecture: {architecture}\n"
             "Section: net\nPriority: optional\n"
-            "Maintainer: Serein contributors <noreply@github.com>\n"
+            "Maintainer: dsrp contributors <noreply@github.com>\n"
             "Homepage: https://github.com/ViceVerse-cz/rustcord\n"
             f"Installed-Size: {installed_kib}\nDepends: {depends}\n"
             "Recommends: gnome-keyring, xdg-desktop-portal-gnome | xdg-desktop-portal-kde | xdg-desktop-portal-wlr, "
@@ -245,18 +245,18 @@ def rpm_package(temporary, stage, application_version, distro):
             "gstreamer1-plugins-base" if distro == "fedora" else "gstreamer-plugins-base",
             "pipewire-gstreamer" if distro == "fedora" else "gstreamer-plugin-pipewire"]
     plugins = "gstreamer1-plugins-base" if distro == "fedora" else "gstreamer-plugins-base"
-    spec = temporary / "serein.spec"
+    spec = temporary / "dsrp.spec"
     spec.write_text(
         "%global debug_package %{nil}\n%global __os_install_post %{nil}\n"
         "%global _build_id_links none\n"
-        f"Name: serein\nVersion: {version}\nRelease: {release}\n"
+        f"Name: dsrp\nVersion: {version}\nRelease: {release}\n"
         "Summary: Unofficial native Discord client\nLicense: MIT OR Apache-2.0\n"
-        "URL: https://github.com/ViceVerse-cz/Serein\n"
+        "URL: https://github.com/ViceVerse-cz/dsrp\n"
         + "\n".join(f"Requires: {item}" for item in requires)
         + f"\nRecommends: gnome-keyring, {plugins}\n"
         "\n%description\nNative Rust client for existing Discord accounts, including voice.\n"
         "Unofficial, experimental, and not endorsed by Discord.\n"
-        "\n%install\nmkdir -p %{buildroot}\ncp -a %{_serein_payload}/. %{buildroot}/\n"
+        "\n%install\nmkdir -p %{buildroot}\ncp -a %{_dsrp_payload}/. %{buildroot}/\n"
         "\n%files\n%defattr(-,root,root,-)\n/usr/bin/dsrp\n"
         "/usr/share/applications/dsrp.desktop\n/usr/share/doc/dsrp\n"
         + "".join(f"/{name}\n" for name in payload_files(stage) if name.startswith("usr/share/icons/")),
@@ -265,10 +265,10 @@ def rpm_package(temporary, stage, application_version, distro):
     if not re.fullmatch(r"[/A-Za-z0-9_.-]+", str(temporary)):
         raise ValueError("RPM temporary directory must have a simple absolute path")
     checked("rpmbuild", "-bb", "--define", f"_topdir {temporary}/rpm",
-            "--define", f"_serein_payload {stage}", str(spec))
+            "--define", f"_dsrp_payload {stage}", str(spec))
     artifact, = (temporary / "rpm/RPMS").rglob("*.rpm")
     actual = output("rpm", "-qp", "--qf", "%{NAME}\n%{VERSION}\n%{RELEASE}\n%{ARCH}", str(artifact))
-    if actual != f"serein\n{version}\n{release}\n{platform.machine()}":
+    if actual != f"dsrp\n{version}\n{release}\n{platform.machine()}":
         raise ValueError(f"Incorrect RPM metadata: {actual}")
     if output("rpm", "-qp", "--scripts", str(artifact)):
         raise ValueError("Unexpected RPM install scripts")
@@ -312,9 +312,9 @@ def arch_package(temporary, stage, application_version, libraries):
     if any(not re.fullmatch(r"[A-Za-z0-9@._+:>=-]+", item) for item in depends):
         raise ValueError("Invalid native Arch dependency metadata")
     (temporary / "PKGBUILD").write_text(
-        f"pkgname=serein\npkgver='{version}'\npkgrel=1\n"
+        f"pkgname=dsrp\npkgver='{version}'\npkgrel=1\n"
         "pkgdesc='Unofficial native Discord client'\n"
-        f"arch=('{platform.machine()}')\nurl='https://github.com/ViceVerse-cz/Serein'\n"
+        f"arch=('{platform.machine()}')\nurl='https://github.com/ViceVerse-cz/dsrp'\n"
         "license=('MIT' 'Apache-2.0')\noptions=('!strip' '!debug' '!lto')\n"
         + "depends=(" + " ".join(f"'{item}'" for item in sorted(depends)) + ")\n"
         "optdepends=('gnome-keyring: Secret Service credential provider' "
@@ -329,7 +329,7 @@ def arch_package(temporary, stage, application_version, libraries):
     extracted.mkdir()
     with tarfile.open(archive) as contents:
         metadata = contents.extractfile(".PKGINFO").read().decode()
-        for item in [f"pkgname = serein", f"pkgver = {version}-1", f"arch = {platform.machine()}",
+        for item in [f"pkgname = dsrp", f"pkgver = {version}-1", f"arch = {platform.machine()}",
                      *(f"depend = {dependency}" for dependency in depends)]:
             if item not in metadata.splitlines():
                 raise ValueError(f"Missing Arch metadata: {item}")

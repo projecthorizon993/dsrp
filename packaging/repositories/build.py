@@ -76,7 +76,7 @@ def build(args):
     with tempfile.TemporaryDirectory(dir=destination.parent) as temporary:
         stage = Path(temporary) / kind
         stage.mkdir()
-        keyfile = stage / "serein.asc"
+        keyfile = stage / "dsrp.asc"
         keyfile.write_text(run("gpg", "--batch", "--armor", "--export", args.key))
         if not keyfile.stat().st_size:
             raise ValueError("signing public key not found")
@@ -100,7 +100,7 @@ def build(args):
             index = run("apt-ftparchive", "packages", ".", cwd=stage).encode()
             (stage / "Packages").write_bytes(index)
             (stage / "Packages.gz").write_bytes(gzip.compress(index, mtime=0))
-            release = run("apt-ftparchive", "-o", "APT::FTPArchive::Release::Origin=Serein",
+            release = run("apt-ftparchive", "-o", "APT::FTPArchive::Release::Origin=dsrp",
                           "-o", f"APT::FTPArchive::Release::Architectures={args.architecture}",
                           "-o", f"APT::FTPArchive::Release::Suite={args.channel}", "release", ".", cwd=stage)
             expiry = format_datetime(datetime.now(timezone.utc) + timedelta(days=30), usegmt=True)
@@ -121,10 +121,10 @@ def build(args):
         else:
             for package in copied:
                 sign(package, args.key)
-            run("repo-add", "--sign", "--key", args.key, "serein.db.tar.gz",
+            run("repo-add", "--sign", "--key", args.key, "dsrp.db.tar.gz",
                 *(p.name for p in copied), cwd=stage)
-            run("gpg", "--batch", "--verify", str(stage / "serein.db.tar.gz.sig"),
-                str(stage / "serein.db.tar.gz"))
+            run("gpg", "--batch", "--verify", str(stage / "dsrp.db.tar.gz.sig"),
+                str(stage / "dsrp.db.tar.gz"))
             # Static hosts/artifact uploads often discard symlinks; publish actual aliases.
             for alias in stage.iterdir():
                 if alias.is_symlink():
@@ -134,9 +134,9 @@ def build(args):
         (stage / "key-fingerprint.txt").write_text(args.key.upper() + "\n")
         url = args.base_url.rstrip("/") + "/" + relative.as_posix()
         if args.format == "rpm":
-            (stage / "serein.repo").write_text(
-                f"[serein-{args.channel}]\nname=Serein {args.channel}\nbaseurl={url}\n"
-                f"enabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey={url}/serein.asc\n")
+            (stage / "dsrp.repo").write_text(
+                f"[dsrp-{args.channel}]\nname=dsrp {args.channel}\nbaseurl={url}\n"
+                f"enabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey={url}/dsrp.asc\n")
         stage.chmod(0o755)
         for path in stage.rglob("*"):
             path.chmod(0o755 if path.is_dir() else 0o644)
@@ -151,8 +151,8 @@ def generate_index(destination: Path):
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Serein Linux Repositories</title>
-  <meta http-equiv="refresh" content="0; url=https://github.com/ViceVerse-cz/Serein">
+  <title>dsrp Linux Repositories</title>
+  <meta http-equiv="refresh" content="0; url=https://github.com/ViceVerse-cz/dsrp">
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; background: #111214; color: #dbdee1; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
     .card { background: #2b2d31; padding: 2rem; border-radius: 8px; text-align: center; max-width: 480px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
@@ -164,10 +164,10 @@ def generate_index(destination: Path):
 </head>
 <body>
   <div class="card">
-    <h1>Serein Linux Repositories</h1>
-    <p>Signed native packages and Flatpak repository for Serein.</p>
-    <p>Run <code>curl -fsSL https://viceverse-cz.github.io/Serein/setup.sh | sh</code> to install.</p>
-    <p><a href="https://github.com/ViceVerse-cz/Serein">View project on GitHub &rarr;</a></p>
+    <h1>dsrp Linux Repositories</h1>
+    <p>Signed native packages and Flatpak repository for dsrp.</p>
+    <p>Run <code>curl -fsSL https://viceverse-cz.github.io/dsrp/setup.sh | sh</code> to install.</p>
+    <p><a href="https://github.com/ViceVerse-cz/dsrp">View project on GitHub &rarr;</a></p>
   </div>
 </body>
 </html>
