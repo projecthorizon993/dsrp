@@ -224,7 +224,7 @@ fn package_windows(root: &std::path::Path) -> Result<(), String> {
 		println!(
 			"Windows installer created: {}",
 			installer_dir
-				.join(format!("serein-{version}-setup.exe"))
+				.join(format!("dsrp-{version}-setup.exe"))
 				.display()
 		);
 	} else {

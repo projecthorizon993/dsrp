@@ -97,7 +97,7 @@ jobs:
         run: |
           cargo xtask package
           mkdir release-assets
-          echo "ASSET=serein-$TAG-$RUNNER_OS-$RUNNER_ARCH" >> "$GITHUB_ENV"
+          echo "ASSET=dsrp-$TAG-$RUNNER_OS-$RUNNER_ARCH" >> "$GITHUB_ENV"
       - name: Archive Windows package
         shell: pwsh
         run: |
@@ -135,7 +135,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8.0.1
         with:
-          pattern: serein-*
+          pattern: dsrp-*
           path: release-assets
           merge-multiple: true
       - name: Checksums

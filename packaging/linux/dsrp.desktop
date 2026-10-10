@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=dsrp
+Comment=Native Discord client, ported from Serein
+Exec=dsrp
+Icon=dsrp
+StartupWMClass=dsrp
+Terminal=false
+Categories=Network;InstantMessaging;

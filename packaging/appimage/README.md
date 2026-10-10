@@ -1,12 +1,12 @@
 # Linux AppImage
 
-Download `serein-<version>-Linux-X64.AppImage` from
+Download `dsrp-<version>-Linux-X64.AppImage` from
 [Releases](https://github.com/ViceVerse-cz/rustcord/releases), keep it in a writable
 directory, and make it executable:
 
 ```sh
-chmod +x ./serein-<version>-Linux-X64.AppImage
-./serein-<version>-Linux-X64.AppImage
+chmod +x ./dsrp-<version>-Linux-X64.AppImage
+./dsrp-<version>-Linux-X64.AppImage
 ```
 
 The x86_64 image contains Serein including voice, its desktop entry, icon and
@@ -40,7 +40,7 @@ The embedded runtime includes FUSE support without requiring the old `libfuse2`
 package. Systems that cannot mount AppImages can run:
 
 ```sh
-./serein-<version>-Linux-X64.AppImage --appimage-extract-and-run
+./dsrp-<version>-Linux-X64.AppImage --appimage-extract-and-run
 ```
 
 Settings → Updates uses the same Production/Nightly channels and automatic-download

@@ -40,7 +40,7 @@ SetCompressor /SOLID lzma
 !endif
 
 Name "${PRODUCT_NAME} ${VERSION}"
-OutFile "${OUTPUT_DIR}\serein-${VERSION}-setup.exe"
+OutFile "${OUTPUT_DIR}\dsrp-${VERSION}-setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\Serein"
 InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "InstallLocation"
 

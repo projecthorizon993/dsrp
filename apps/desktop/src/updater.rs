@@ -1,4 +1,4 @@
-//! Credential-free release updates. Work and filesystem access stay off the UI thread.
+﻿//! Credential-free release updates. Work and filesystem access stay off the UI thread.
 use eframe::egui;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -325,7 +325,7 @@ impl Updater {
 					.map_err(|_| "Could not prepare the update restart.".to_owned())??;
 					Ok(Outcome::Prepared(helper))
 				});
-				self.status = "Preparing to restartâ€¦".into();
+				self.status = "Preparing to restartÃ¢â‚¬Â¦".into();
 			} else if supported
 				&& (download || (view.auto_update && self.auto_download))
 				&& self.package.is_some()
@@ -338,7 +338,7 @@ impl Updater {
 					.expect("a supported platform's checked package has a downloadable archive")
 					.size;
 				self.auto_download = false;
-				self.status = format!("Downloading Serein {}â€¦", package.version);
+				self.status = format!("Downloading Serein {}Ã¢â‚¬Â¦", package.version);
 				self.start(runtime, ctx, total, move |cancel, progress| {
 					download_package(package, cancel, progress)
 				});
@@ -358,7 +358,7 @@ impl Updater {
 							.await
 							.map(|(package, log)| Outcome::Checked(package, log))
 					});
-					self.status = "Checking for updatesâ€¦".into();
+					self.status = "Checking for updatesÃ¢â‚¬Â¦".into();
 				}
 			}
 		}
@@ -561,25 +561,47 @@ fn release_version(tag: &str) -> Option<semver::Version> {
 	}
 	semver::Version::parse(tag.strip_prefix('v')?).ok()
 }
-fn asset_name(tag: &str) -> Option<String> {
-	if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-		return install::appimage_session().then(|| format!("serein-{tag}-Linux-X64.AppImage"));
-	}
-	let os = if cfg!(target_os = "macos") {
-		"macOS"
-	} else if cfg!(windows) {
-		"Windows"
-	} else {
-		return None;
+/// The release-asset name prefix. Kept in one place because the release workflow, the AppImage build
+/// and this file all have to agree, and an updater that disagrees with the release it is downloading
+/// reports "you are up to date" rather than "this build is misconfigured".
+const ASSET_PREFIX: &str = "dsrp";
+
+/// Asset names published before the rename.
+///
+/// An updater that only looks for `dsrp-â€¦` cannot see `serein-â€¦`, so everyone on a pre-rename build
+/// would stop updating â€” and it would look like "no updates available" rather than a problem. The
+/// old prefix is therefore accepted for reads and never written. Drop it once the next release after
+/// the rename has been out long enough that people have migrated.
+const LEGACY_ASSET_PREFIX: &str = "serein";
+
+/// Every asset name this release could be published under, in the order to try.
+fn asset_names(tag: &str) -> Vec<String> {
+	let body = |prefix: &str| -> Option<String> {
+		if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+			return install::appimage_session()
+				.then(|| format!("{prefix}-{tag}-Linux-X64.AppImage"));
+		}
+		let os = if cfg!(target_os = "macos") {
+			"macOS"
+		} else if cfg!(windows) {
+			"Windows"
+		} else {
+			return None;
+		};
+		let arch = if cfg!(target_arch = "aarch64") {
+			"ARM64"
+		} else if cfg!(target_arch = "x86_64") {
+			"X64"
+		} else {
+			return None;
+		};
+		Some(format!("{prefix}-{tag}-{os}-{arch}.zip"))
 	};
-	let arch = if cfg!(target_arch = "aarch64") {
-		"ARM64"
-	} else if cfg!(target_arch = "x86_64") {
-		"X64"
-	} else {
-		return None;
-	};
-	Some(format!("serein-{tag}-{os}-{arch}.zip"))
+	[Some(ASSET_PREFIX), Some(LEGACY_ASSET_PREFIX)]
+		.into_iter()
+		.flatten()
+		.filter_map(body)
+		.collect()
 }
 fn on_channel(release: &Release, version: &semver::Version, nightly: bool) -> bool {
 	let is_nightly = version.pre.as_str().starts_with("nightly.");
@@ -697,14 +719,15 @@ fn select_release(
 	}
 	// No in-app installer for this installation: still report the newer version so the
 	// UI can show it, but there is no asset to look up or download.
-	let Some(wanted) = asset_name(&release.tag_name) else {
+	let wanted = asset_names(&release.tag_name);
+	if wanted.is_empty() {
 		return Ok(Some(Package {
 			version: version.to_string(),
 			archive: None,
 			checksums: None,
 			zsync: None,
 		}));
-	};
+	}
 	let find = |name: &str| -> Result<Asset, String> {
 		let mut found = release.assets.iter().filter(|asset| asset.name == name);
 		let asset = found
@@ -717,8 +740,9 @@ fn select_release(
 		{
 			return Err("The release asset metadata is invalid.".into());
 		}
-		let expected = asset_url(&release.tag_name, name);
-		if asset.browser_download_url != expected {
+		// The URL must be an asset of this repository. Both prefixes are accepted so a release cut
+		// either side of the rename resolves to its own URL rather than being rejected.
+		if asset.browser_download_url != asset_url(&release.tag_name, name) {
 			return Err(format!(
 				"The asset is not from the {} release repository.",
 				update_repo()
@@ -726,11 +750,17 @@ fn select_release(
 		}
 		Ok(asset.clone())
 	};
-	let archive = find(&wanted)?;
+	// Prefer the current prefix, but fall back to the pre-rename name so an existing install can
+	// still update from a release that only published the old one.
+	let archive = wanted
+		.iter()
+		.find_map(|name| find(name).ok())
+		.ok_or_else(|| format!("This release has no {wanted:?} package. Try a later release."))?;
 	let checksums = find("SHA256SUMS.txt")?;
-	let zsync = wanted
+	let zsync = archive
+		.name
 		.ends_with(".AppImage")
-		.then(|| find(&format!("{wanted}.zsync")).ok())
+		.then(|| find(&format!("{}.zsync", archive.name)).ok())
 		.flatten()
 		.filter(|asset| asset.size <= delta::MAX_CONTROL as u64);
 	if checksums.size > 64 * 1024 {
@@ -976,7 +1006,7 @@ pub fn debug_check() -> Result<(), String> {
 	// release list it then refuses every asset from - a silent failure that looks like "no updates
 	// available" rather than a misconfiguration.
 	let feed = releases();
-	let asset = asset_url("v1.2.3", "serein-x.zip");
+	let asset = asset_url("v1.2.3", "dsrp-x.zip");
 	if !feed.contains(update_repo())
 		|| !asset.contains(update_repo())
 		|| feed.contains("ViceVerse-cz")
@@ -985,9 +1015,24 @@ pub fn debug_check() -> Result<(), String> {
 		return Err("The update feed and asset check disagree about the repository.".into());
 	}
 	if !asset.starts_with("https://github.com/")
-		|| !asset.ends_with("/releases/download/v1.2.3/serein-x.zip")
+		|| !asset.ends_with("/releases/download/v1.2.3/dsrp-x.zip")
 	{
 		return Err("The asset URL shape changed.".into());
+	}
+	// Both prefixes must resolve, or an install predating the rename updates to nothing.
+	let names = asset_names("v0.2.0");
+	if names.len() != 2
+		|| !names[0].starts_with("dsrp-")
+		|| !names[1].starts_with("serein-")
+		|| names[0] == names[1]
+	{
+		return Err(format!("Asset prefixes changed shape: {names:?}"));
+	}
+	let same = asset_names("v9.9.9");
+	if same[0].replace("v9.9.9", "X") != names[0].replace("v0.2.0", "X")
+		|| same[1].replace("v9.9.9", "X") != names[1].replace("v0.2.0", "X")
+	{
+		return Err("The asset prefix list is not stable across tags.".into());
 	}
 	let hash = "00".repeat(32);
 	if checksum(format!("{hash}  ./package.zip\n").as_bytes(), "package.zip")? != [0; 32]
