@@ -1174,6 +1174,13 @@ impl MessagingUi {
 							(&mut self.no_typing_animation, plugin.note)
 						}
 						Some(Setting::ExactTimestamps) => (&mut self.exact_timestamps, plugin.note),
+						Some(Setting::PlainFolderIcon) => {
+							(&mut self.plain_folder_icon, plugin.note)
+						}
+						Some(Setting::NoServerEmojis) => (&mut self.no_server_emojis, plugin.note),
+						Some(Setting::CopyEmojiMarkdown) => {
+							(&mut self.copy_emoji_markdown, plugin.note)
+						}
 						// Unreachable while every variant is handled above. A new variant has to be
 						// wired to a real preference before it can reach this page.
 						None => continue,

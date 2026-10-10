@@ -29,6 +29,8 @@ pub struct Menu {
 	follow: bool,
 	/// Leave custom emoji that need Nitro out of `:` suggestions.
 	pub hide_nitro_emojis: bool,
+	/// Leave server emoji out of `:` suggestions entirely, the way `noServerEmojis` does.
+	pub no_server_emojis: bool,
 }
 pub struct Pick {
 	range: Range<usize>,
@@ -467,6 +469,7 @@ impl Menu {
 		let Some((range, query, kind)) = cursor.and_then(|cursor| query(draft, cursor)) else {
 			*self = Self {
 				hide_nitro_emojis: self.hide_nitro_emojis,
+				no_server_emojis: self.no_server_emojis,
 				..Self::default()
 			};
 			return;
@@ -569,7 +572,10 @@ impl Menu {
 				.collect(),
 			Kind::Emoji => {
 				let mut out = Vec::with_capacity(EMOJI_LIMIT);
-				for guild in &state.guilds {
+				// `noServerEmojis` drops the server emoji from the list, not from the picker: it is
+				// an autocomplete convenience, and hiding emoji the server owns everywhere would
+				// also hide them from everyone else in the conversation.
+				for guild in state.guilds.iter().filter(|_| !self.no_server_emojis) {
 					let source_match = rank(&query, &guild.name, Id(0)).map(|_| 2);
 					for emoji in guild.emojis.iter().flatten() {
 						if let Some(rank) = rank(&query, &emoji.name, Id(0)).or(source_match)
@@ -1597,6 +1603,59 @@ mod tests {
 				code: ":thumbsup:"
 			}
 		)));
+	}
+
+	#[test]
+	fn server_emoji_leave_the_suggestions_when_the_preference_asks() {
+		let guilds = vec![model::Guild {
+			default_message_notifications: None,
+			stickers: None,
+			id: Id(9),
+			name: "Guild".into(),
+			icon: None,
+			emojis: Some(vec![model::CustomEmoji {
+				id: Id(9001),
+				name: "heart_hands_custom".into(),
+				animated: false,
+				available: true,
+				managed: false,
+				roles: Some(vec![]),
+			}]),
+		}];
+		let state = State {
+			guilds,
+			channels: vec![channel(1, None, 1, "DM")],
+			user: Some(user(7, "Owner")),
+			..State::default()
+		};
+		let mut menu = Menu::default();
+		menu.refresh(&state, Id(1), "hi :he", Some(6), &[]);
+		assert!(menu.candidates.iter().any(|c| c.id() == Id(9001)));
+
+		menu.no_server_emojis = true;
+		// Closing the menu resets everything else, so this is where the preference could be lost.
+		menu.refresh(&state, Id(1), "x", None, &[]);
+		assert!(
+			menu.no_server_emojis,
+			"the preference survives a closed menu"
+		);
+
+		menu.refresh(&state, Id(1), "hi :he", Some(6), &[]);
+		assert!(
+			!menu.candidates.iter().any(|c| c.id() == Id(9001)),
+			"a server emoji must not be suggested when the preference asks"
+		);
+		// The standard emoji are not server emoji, so the menu must not empty out.
+		assert!(
+			menu.candidates
+				.iter()
+				.any(|c| matches!(c, Candidate::Unicode { code, .. } if *code == ":heart:"))
+		);
+
+		// The picker is a different surface and keeps every emoji; only this list was asked to change.
+		menu.no_server_emojis = false;
+		menu.refresh(&state, Id(1), "hi :he", Some(6), &[]);
+		assert!(menu.candidates.iter().any(|c| c.id() == Id(9001)));
 	}
 }
 

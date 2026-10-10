@@ -255,6 +255,23 @@ fn folder_mosaic<'a>(folder: &Folder, state: &'a State) -> [Option<&'a model::Gu
 	slots
 }
 
+/// The servers shown inside a folder tile. `plain` is Vencord's `plainFolderIcon`: the tile keeps its
+/// colour, its unread count and its voice badge, and only the mosaic of server icons goes away.
+///
+/// A folder can hold more servers than the mosaic has cells, so this loses information rather than
+/// only restyling, which is why it is a switch instead of how this client renders.
+fn folder_mosaic_for<'a>(
+	folder: &Folder,
+	state: &'a State,
+	plain: bool,
+) -> [Option<&'a model::Guild>; MOSAIC] {
+	if plain {
+		[None; MOSAIC]
+	} else {
+		folder_mosaic(folder, state)
+	}
+}
+
 fn mosaic_cell(tile: egui::Rect, index: usize) -> egui::Rect {
 	let preview = egui::Rect::from_center_size(tile.center(), egui::Vec2::splat(MOSAIC_PREVIEW));
 	let col = (index % 2) as f32;
@@ -543,7 +560,7 @@ impl MessagingUi {
 									&mut self.avatars,
 									rect.shrink(3.5 * shown),
 									fill,
-									folder_mosaic(folder, state),
+									folder_mosaic_for(folder, state, self.plain_folder_icon),
 									state.demo,
 								);
 								ui.set_opacity(opacity);
@@ -838,7 +855,7 @@ impl MessagingUi {
 									&mut self.avatars,
 									rect,
 									tint,
-									folder_mosaic(folder, state),
+									folder_mosaic_for(folder, state, self.plain_folder_icon),
 									state.demo,
 								);
 							}
@@ -1046,6 +1063,60 @@ mod tests {
 				}
 			}
 		}
+	}
+
+	#[test]
+	fn a_plain_folder_tile_drops_the_server_mosaic_and_keeps_the_folder() {
+		/// Server initials painted inside a collapsed folder tile.
+		fn mosaic_initials(plain: bool) -> usize {
+			let mut state = test_support::demo_state();
+			let mut second = state.guilds[0].clone();
+			second.id = Id(11);
+			second.name = "Second server".into();
+			state.guilds.push(second);
+			// Initials rather than artwork, so the mosaic is countable from the painted text.
+			for guild in &mut state.guilds {
+				guild.icon = None;
+			}
+			state.guilds[0].name = "Click target".into();
+			state.guild_folders = Some(Settings {
+				folders: vec![Folder {
+					id: Some(7),
+					guild_ids: vec![Id(10), Id(11)],
+					..standalone(Id(10))
+				}],
+				..Default::default()
+			});
+			let mut view = MessagingUi::default();
+			view.plain_folder_icon = plain;
+			let ctx = egui::Context::default();
+			let mut commands = Vec::new();
+			let output = ctx.run_ui(
+				egui::RawInput {
+					screen_rect: Some(egui::Rect::from_min_size(
+						egui::Pos2::ZERO,
+						egui::vec2(200.0, 400.0),
+					)),
+					..Default::default()
+				},
+				|ui| view.server_folders(ui, &mut state, &mut commands),
+			);
+			let painted = output
+				.shapes
+				.iter()
+				.filter(|shape| {
+					matches!(&shape.shape,
+						egui::Shape::Text(text) if text.galley.text() == "Ct" || text.galley.text() == "Ss")
+				})
+				.count();
+			output.drop_without_applying_deltas();
+			assert!(commands.is_empty(), "painting a folder tile sends nothing");
+			painted
+		}
+
+		// The disagreement itself: both servers show by default, neither does when asked for plain.
+		assert_eq!(mosaic_initials(false), 2, "both folder servers are drawn");
+		assert_eq!(mosaic_initials(true), 0, "a plain tile draws no servers");
 	}
 
 	#[test]

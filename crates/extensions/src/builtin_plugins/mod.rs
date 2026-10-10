@@ -44,6 +44,12 @@ pub enum Setting {
 	NoTypingAnimation,
 	/// Reporting elapsed time without rounding.
 	ExactTimestamps,
+	/// Painting folder tiles without the server-icon mosaic.
+	PlainFolderIcon,
+	/// Leaving server emoji out of the `:` autocomplete list.
+	NoServerEmojis,
+	/// Copying Unicode emoji as `:shortcode:`.
+	CopyEmojiMarkdown,
 }
 
 /// How faithfully a Vencord plugin can exist here.
@@ -235,7 +241,7 @@ mod tests {
 		// Sanity-bound the claim. These are exact counts on purpose: if a port lands, the count moves
 		// and whoever moved it has to update this, which is the point.
 		assert_eq!(
-			implemented, 22,
+			implemented, 25,
 			"implemented count changed; update this test"
 		);
 	}

@@ -55,6 +55,9 @@ impl Settings {
 			local_nitro: ui.local_nitro,
 			no_typing_animation: ui.no_typing_animation,
 			exact_timestamps: ui.exact_timestamps,
+			plain_folder_icon: ui.plain_folder_icon,
+			no_server_emojis: ui.no_server_emojis,
+			copy_emoji_markdown: ui.copy_emoji_markdown,
 			convert_emoticons: ui.convert_emoticons,
 			hide_title_bar: ui.hide_title_bar,
 			hide_window_decorations: ui.hide_window_decorations,
@@ -101,6 +104,9 @@ impl Settings {
 		ui.local_nitro = value.local_nitro;
 		ui.no_typing_animation = value.no_typing_animation;
 		ui.exact_timestamps = value.exact_timestamps;
+		ui.plain_folder_icon = value.plain_folder_icon;
+		ui.no_server_emojis = value.no_server_emojis;
+		ui.copy_emoji_markdown = value.copy_emoji_markdown;
 		ui.convert_emoticons = value.convert_emoticons;
 		ui.hide_title_bar = value.hide_title_bar;
 		ui.hide_window_decorations = value.hide_window_decorations;

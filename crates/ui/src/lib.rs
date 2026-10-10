@@ -49,7 +49,7 @@ mod theme_editor;
 mod thread_create;
 pub use extensions_ui::{ExtensionContext, ExtensionEntry, ExtensionRequest, ExtensionUi};
 pub mod emoji;
-mod emoji_details;
+pub mod emoji_details;
 mod emoji_picker;
 mod emoticons;
 pub mod fonts;
@@ -495,6 +495,12 @@ pub struct MessagingUi {
 	pub transparency_blur: bool,
 	pub transparency: u8,
 	pub blur: u8,
+	/// Copy a Unicode emoji as its `:shortcode:` rather than as the raw glyph.
+	pub copy_emoji_markdown: bool,
+	/// Leave server emoji out of the composer's `:` suggestions.
+	pub no_server_emojis: bool,
+	/// Paint server folder tiles without the mosaic of server icons.
+	pub plain_folder_icon: bool,
 }
 
 /// Context strip (reply/edit) drawn as the rounded top of the composer block.
@@ -3205,6 +3211,7 @@ impl MessagingUi {
 			.filter(|r| r.is_empty())
 			.map(|r| r.primary.index.0);
 		self.mention_menu.hide_nitro_emojis = self.hide_nitro_emojis;
+		self.mention_menu.no_server_emojis = self.no_server_emojis;
 		self.mention_menu.refresh(
 			state,
 			channel,

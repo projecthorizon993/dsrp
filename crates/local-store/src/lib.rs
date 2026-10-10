@@ -1,4 +1,4 @@
-﻿//! Account-isolated bounded SQLite cache. This is not Discord's authoritative state.
+//! Account-isolated bounded SQLite cache. This is not Discord's authoritative state.
 mod account_presence;
 mod channel_preferences;
 use model::{Id, Message, ReadingPreferences, User};
@@ -91,6 +91,12 @@ pub struct AppPreferences {
 	pub user_volumes: Vec<(u64, u16)>,
 	/// Voice participants silenced on this device only, bounded like the volume overrides.
 	pub muted_users: Vec<u64>,
+	/// Device-local opt-in for the `copyEmojiMarkdown` mod; older saved preferences deserialize with it off.
+	pub copy_emoji_markdown: bool,
+	/// Device-local opt-in for the `noServerEmojis` mod; older saved preferences deserialize with it off.
+	pub no_server_emojis: bool,
+	/// Device-local opt-in for the `plainFolderIcon` mod; older saved preferences deserialize with it off.
+	pub plain_folder_icon: bool,
 }
 impl Default for AppPreferences {
 	fn default() -> Self {
@@ -105,6 +111,9 @@ impl Default for AppPreferences {
 			hide_nitro_emojis: false,
 			local_nitro: false,
 			convert_emoticons: false,
+			plain_folder_icon: false,
+			no_server_emojis: false,
+			copy_emoji_markdown: false,
 			no_typing_animation: false,
 			exact_timestamps: false,
 			hide_title_bar: false,

@@ -5990,6 +5990,12 @@ impl Desktop {
 			ui::typing::set_animate(!self.messaging.no_typing_animation);
 			ctx.request_repaint();
 		}
+		// The emoji copy action is reached from markdown inline rendering, so it reads the same kind
+		// of flag rather than taking the preference through every one of those call sites.
+		if ui::emoji_details::markdown_copy() != self.messaging.copy_emoji_markdown {
+			ui::emoji_details::set_markdown_copy(self.messaging.copy_emoji_markdown);
+			ctx.request_repaint();
+		}
 	}
 	fn sync_window_effects(&mut self) {
 		if !self.transparency_available {

@@ -84,6 +84,18 @@ const OPT_IN = {
     note: 'The typing indicator holds still, and stops asking for repaints to animate it',
     setting: 'NoTypingAnimation',
   },
+  copyEmojiMarkdown: {
+    note: 'Copying a Unicode emoji writes its :shortcode:; a custom emoji is already <:name:id>',
+    setting: 'CopyEmojiMarkdown',
+  },
+  noServerEmojis: {
+    note: 'Server emoji are left out of the : autocomplete list; the emoji picker keeps them',
+    setting: 'NoServerEmojis',
+  },
+  plainFolderIcon: {
+    note: 'A server folder paints a plain tile, keeping its colour, unread count and voice badge',
+    setting: 'PlainFolderIcon',
+  },
 };
 
 // Notes for planned entries whose Vencord description undersells what porting them here would take.
