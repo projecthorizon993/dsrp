@@ -2,7 +2,7 @@
 //!
 //! Serein's plugin system is Wasm-based: a plugin package carries a Wasm module with no imports, and
 //! `Package::validate` admits nothing else. A Rust mod therefore cannot be registered as a plugin at
-//! all â€” it has to be a built-in module with a native code path. This module is the catalog of those,
+//! all - it has to be a built-in module with a native code path. This module is the catalog of those,
 //! so the settings page can say which exist and the host can drive the ones with a switch.
 //!
 //! # The catalog is a claim, so it has to be kept true
@@ -13,9 +13,18 @@
 //!
 //! Porting a mod is not the same as describing one. An entry here may only claim [`Port::Native`] or
 //! [`Port::Partial`] if a real code path in this client does that thing, and it may only carry a
-//! [`Plugin::setting`] if flipping a switch actually changes behaviour. Everything else is
-//! [`Port::Unsupported`] with the reason spelled out. A catalog written ahead of the implementations
-//! is worse than an empty one, because it makes the settings page lie on the user's behalf.
+//! [`Plugin::setting`] if flipping a switch actually changes behaviour.
+//!
+//! Classification is by what is *possible in a native client*, never by how Vencord implements a
+//! plugin. A plugin that injects a stylesheet is describing its own technique, not a limit here: six
+//! plugins this client already implements natively - the character counter, call timer, platform
+//! indicators, mark-server-read, connections and voice participants - are all stylesheet-based in
+//! Vencord. So [`Port::Planned`] means "portable, not built yet" and covers most of the catalog,
+//! while [`Port::Unsupported`] is reserved for the handful whose entire deliverable is a web page or
+//! Vencord's own backend. Anything else would be a backlog item dressed up as a refusal.
+//!
+//! A catalog written ahead of the implementations is worse than an empty one, because it makes the
+//! settings page lie on the user's behalf.
 //!
 //! That is also why [`Plugin::setting`] exists instead of a bare "toggleable" flag: most native
 //! behaviour is simply how this client renders, with nothing to switch. A switch on such an entry
@@ -42,13 +51,20 @@ pub enum Port {
 	NativeOptIn,
 	/// Implemented, but not the way the mod does it.
 	Partial,
-	/// Not implemented. [`Plugin::note`] says why.
+	/// Portable in principle, not built yet. This is the porting backlog, not a refusal.
+	Planned,
+	/// No client behaviour left to reproduce. [`Plugin::note`] says why.
 	Unsupported,
 }
 
 impl Port {
 	/// Whether this status means the client really does the thing.
 	pub const fn is_implemented(self) -> bool {
+		matches!(self, Self::Native | Self::NativeOptIn | Self::Partial)
+	}
+
+	/// Whether this is worth porting, as opposed to genuinely out of reach.
+	pub const fn is_portable(self) -> bool {
 		!matches!(self, Self::Unsupported)
 	}
 
@@ -58,6 +74,7 @@ impl Port {
 			Self::Native => "native",
 			Self::NativeOptIn => "opt-in",
 			Self::Partial => "partial",
+			Self::Planned => "planned",
 			Self::Unsupported => "unsupported",
 		}
 	}
@@ -158,16 +175,59 @@ mod tests {
 	}
 
 	#[test]
+	fn unsupported_is_reserved_for_things_that_cannot_work_here() {
+		// The guard against regressing into the old bug, where 146 of 166 entries were called
+		// unsupported because Vencord implemented them with a stylesheet. Most of the catalog is
+		// portable; only a handful target a web page or Vencord's own backend. If this count climbs,
+		// the classification has started describing implementation technique again.
+		let unsupported = Plugin::ALL
+			.iter()
+			.filter(|p| p.port == Port::Unsupported)
+			.count();
+		assert!(
+			unsupported <= 15,
+			"{unsupported} entries claim they cannot work here; that is a backlog wearing a refusal"
+		);
+		for plugin in Plugin::ALL.iter().filter(|p| p.port == Port::Unsupported) {
+			assert!(
+				!plugin.note.is_empty(),
+				"{} is unsupported with no reason",
+				plugin.id
+			);
+		}
+	}
+
+	#[test]
+	fn planned_work_is_a_backlog_not_a_refusal() {
+		// Planned entries are portable, so they have to stay visibly distinct from Unsupported. A
+		// user reading "planned" learns the mod is worth doing; one reading "unsupported" learns it
+		// is not. Collapsing the two is what made the first version of this catalog useless.
+		let planned = Plugin::ALL
+			.iter()
+			.filter(|p| p.port == Port::Planned)
+			.count();
+		assert!(planned > 0);
+		for plugin in Plugin::ALL.iter().filter(|p| p.port == Port::Planned) {
+			assert!(
+				plugin.port.is_portable(),
+				"{} is planned but not portable",
+				plugin.id
+			);
+			assert!(
+				plugin.setting.is_none(),
+				"{} is planned but claims a switch",
+				plugin.id
+			);
+		}
+	}
+
+	#[test]
 	fn implemented_entries_name_a_real_status() {
 		let implemented = Plugin::ALL
 			.iter()
 			.filter(|p| p.port.is_implemented())
 			.count();
 		assert!(implemented > 0, "nothing is ported, which cannot be right");
-		assert!(
-			Plugin::ALL.iter().any(|p| p.port == Port::Unsupported),
-			"a catalog claiming to be complete must admit what it cannot do"
-		);
 		// Sanity-bound the claim. These are exact counts on purpose: if a port lands, the count moves
 		// and whoever moved it has to update this, which is the point.
 		assert_eq!(

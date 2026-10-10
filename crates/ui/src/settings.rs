@@ -1137,6 +1137,10 @@ impl MessagingUi {
 			.iter()
 			.filter(|p| p.port == Port::Partial && !p.is_toggleable() && matches(p))
 			.collect();
+		let planned: Vec<&Plugin> = Plugin::ALL
+			.iter()
+			.filter(|p| p.port == Port::Planned && matches(p))
+			.collect();
 		let unsupported: Vec<&Plugin> = Plugin::ALL
 			.iter()
 			.filter(|p| p.port == Port::Unsupported && matches(p))
@@ -1196,11 +1200,27 @@ impl MessagingUi {
 			);
 		}
 
+		// Planned is the porting backlog, kept visible on purpose. Hiding 137 entries behind a
+		// search box would read as "this client cannot do any of this", which is the opposite of
+		// the truth: they are portable, just not built.
+		if !planned.is_empty() {
+			design::group(
+				ui,
+				&format!("Planned, not built yet ({})", planned.len()),
+				|ui| {
+					ui.label("These would work here, but have not been ported yet.");
+					for plugin in planned {
+						ui.label(format!("{} — {}", plugin.name, plugin.note));
+					}
+				},
+			);
+		}
+
 		design::group(
 			ui,
 			&format!("Not available ({})", unsupported.len()),
 			|ui| {
-				ui.label("These need a web app, a DOM, or CSS injection to patch.");
+				ui.label("These exist to change a web page or to use Vencord's own services.");
 				for plugin in unsupported {
 					ui.label(format!("{} — {}", plugin.name, plugin.note));
 				}
