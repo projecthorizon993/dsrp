@@ -204,10 +204,14 @@ fn installation() -> Result<PathBuf, String> {
 		// The following files are expected in a full release package but may be missing in
 		// portable or minimal installations. Log a warning but don't block the update.
 		if !root.join("THIRD_PARTY_NOTICES.md").is_file() {
-			eprintln!("Warning: THIRD_PARTY_NOTICES.md not found; update will proceed but may be incomplete.");
+			eprintln!(
+				"Warning: THIRD_PARTY_NOTICES.md not found; update will proceed but may be incomplete."
+			);
 		}
 		if !root.join("licenses").is_dir() {
-			eprintln!("Warning: licenses directory not found; update will proceed but may be incomplete.");
+			eprintln!(
+				"Warning: licenses directory not found; update will proceed but may be incomplete."
+			);
 		}
 		Ok(root.to_owned())
 	} else {
