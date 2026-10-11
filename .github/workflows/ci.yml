@@ -31,7 +31,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, windows-11-arm, ubuntu-latest]
+        # macOS ships nothing (release.yml builds Windows and Linux only), so it
+        # is not a matrix leg here.
+        os: [windows-latest, windows-11-arm, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -66,12 +68,9 @@ jobs:
             run: PYTHONDONTWRITEBYTECODE=1 python3 packaging/linux/test_package.py
       - run: cargo replay
       - run: cargo replay --soak 5
-      - name: Package app without demo or developer features
-        run: cargo xtask package
-      - uses: actions/upload-artifact@v7.0.1
-        with:
-          name: dsrp-${{ runner.os }}-${{ runner.arch }}-unsigned
-          path: dist/
+      # Packaging is deliberately not run here. `cargo xtask package` costs
+      # ~13 minutes per OS and release.yml runs its own packaging step, so
+      # building unsigned artifacts on every push only wasted runner time.
   extension-sdk:
     runs-on: ubuntu-latest
     steps:
