@@ -589,7 +589,7 @@ mod tests {
 	fn watch_releases_large_pixel_capacity_after_a_resolution_drop() {
 		let mut picture = None;
 		let rgba = vec![255; 3840 * 2160 * 4];
-		assert!(store_frame(&mut picture, frame(1920, 1080, &rgba)));
+		assert!(store_frame(&mut picture, frame(3840, 2160, &rgba)));
 		assert_eq!(picture.as_ref().unwrap().pixels.len(), 3840 * 2160);
 		assert!(store_frame(
 			&mut picture,
@@ -609,7 +609,7 @@ mod tests {
 			&mut picture,
 			frame(1600, 900, &rgba[..1600 * 900 * 4])
 		));
-		assert!(store_frame(&mut picture, frame(1920, 1080, &rgba)));
+		assert!(store_frame(&mut picture, frame(3840, 2160, &rgba)));
 		let latest = picture.take().unwrap();
 		assert_eq!(latest.size, [3840, 2160]);
 		assert_eq!(latest.pixels.len(), 3840 * 2160);
