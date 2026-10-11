@@ -74,6 +74,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dsrp-fuzz"
+version = "0.0.0"
+dependencies = [
+ "client-core",
+ "discord-protocol",
+ "libfuzzer-sys",
+ "model",
+ "session-cache",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -358,17 +369,6 @@ dependencies = [
  "itoa",
  "serde",
  "serde_core",
-]
-
-[[package]]
-name = "dsrp-fuzz"
-version = "0.0.0"
-dependencies = [
- "client-core",
- "discord-protocol",
- "libfuzzer-sys",
- "model",
- "session-cache",
 ]
 
 [[package]]

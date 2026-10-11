@@ -52,7 +52,7 @@ def check_shortcut(shortcut, executable):
         try:
             assert ctypes.c_ushort.from_buffer(value).value == 31
             app_id = ctypes.c_void_p.from_buffer(value, 8).value
-            assert ctypes.wstring_at(app_id) == "io.github.projecthorizon993.dsrp"
+            assert ctypes.wstring_at(app_id) == "dsrp"
         finally:
             ole.PropVariantClear(value)
     finally:
