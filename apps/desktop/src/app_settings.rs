@@ -55,6 +55,7 @@ impl Settings {
 			local_nitro: ui.local_nitro,
 			no_typing_animation: ui.no_typing_animation,
 			exact_timestamps: ui.exact_timestamps,
+			unindent: ui.unindent,
 			fix_codeblock_gap: ui.fix_codeblock_gap,
 			reply_timestamp: ui.reply_timestamp,
 			plain_folder_icon: ui.plain_folder_icon,
@@ -106,6 +107,7 @@ impl Settings {
 		ui.local_nitro = value.local_nitro;
 		ui.no_typing_animation = value.no_typing_animation;
 		ui.exact_timestamps = value.exact_timestamps;
+		ui.unindent = value.unindent;
 		ui.fix_codeblock_gap = value.fix_codeblock_gap;
 		ui.reply_timestamp = value.reply_timestamp;
 		ui.plain_folder_icon = value.plain_folder_icon;

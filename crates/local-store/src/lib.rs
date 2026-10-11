@@ -101,6 +101,8 @@ pub struct AppPreferences {
 	pub reply_timestamp: bool,
 	/// Device-local opt-in for the `fixCodeblockGap` mod; older saved preferences deserialize with it off.
 	pub fix_codeblock_gap: bool,
+	/// Device-local opt-in for the `unindent` mod; older saved preferences deserialize with it off.
+	pub unindent: bool,
 }
 impl Default for AppPreferences {
 	fn default() -> Self {
@@ -115,6 +117,7 @@ impl Default for AppPreferences {
 			hide_nitro_emojis: false,
 			local_nitro: false,
 			convert_emoticons: false,
+			unindent: false,
 			fix_codeblock_gap: false,
 			reply_timestamp: false,
 			plain_folder_icon: false,

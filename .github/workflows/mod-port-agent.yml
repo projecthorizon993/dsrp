@@ -6,22 +6,11 @@ run-name: Mod catalog gate and backlog
 # compiler, because both were strings in a generated file. This workflow is what stops them coming
 # back: it re-derives the catalog, gates every claim in it, and keeps the porting backlog ranked.
 on:
-  push:
-    branches: [main]
-    paths:
-      - crates/extensions/src/builtin_plugins/**
-      - tools/mod-port/**
-      - crates/local-store/src/lib.rs
-      - crates/ui/src/lib.rs
-  pull_request:
-    paths:
-      - crates/extensions/src/builtin_plugins/**
-      - tools/mod-port/**
-      - crates/local-store/src/lib.rs
-      - crates/ui/src/lib.rs
+  # Only run on schedule (Mondays) and manual dispatch.
+  # Push/PR triggers removed to avoid CI load on every change.
   schedule:
-    # Mondays, so a dependency bump upstream in Vencord shows up as a changed backlog rather than
-    # waiting for the next port.
+    # Mondays, so a dependency bump upstream in Vencord shows up as a changed
+    # backlog rather than waiting for the next port.
     - cron: '37 5 * * 1'
   workflow_dispatch:
 

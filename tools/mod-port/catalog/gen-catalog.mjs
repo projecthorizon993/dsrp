@@ -111,6 +111,10 @@ const OPT_IN = {
     note: 'The gap between a code block and the following text is removed',
     setting: 'FixCodeblockGap',
   },
+  unindent: {
+    note: 'Leading whitespace common to all lines of a code block is stripped',
+    setting: 'Unindent',
+  },
 };
 
 // Notes for planned entries whose Vencord description undersells what porting them here would take.

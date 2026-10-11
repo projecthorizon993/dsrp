@@ -1174,6 +1174,7 @@ impl MessagingUi {
 							(&mut self.no_typing_animation, plugin.note)
 						}
 						Some(Setting::ExactTimestamps) => (&mut self.exact_timestamps, plugin.note),
+						Some(Setting::Unindent) => (&mut self.unindent, plugin.note),
 						Some(Setting::FixCodeblockGap) => {
 							(&mut self.fix_codeblock_gap, plugin.note)
 						}

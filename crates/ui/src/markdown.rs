@@ -34,6 +34,23 @@ pub fn set_fix_codeblock_gap(fix: bool) {
 	FIX_CODEBLOCK_GAP.store(fix, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// Whether leading whitespace common to all lines of a code block is stripped.
+///
+/// A process-wide flag for the same reason as `local_time`: the code block is laid out deep
+/// inside the message renderer, and threading the preference through every call site is
+/// not worth the churn. Set once per frame alongside the other preference syncs.
+static UNINDENT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether common leading whitespace is stripped from code blocks.
+pub fn unindent() -> bool {
+	UNINDENT.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Applies [`unindent`]. Called once per frame alongside the other preference syncs.
+pub fn set_unindent(enabled: bool) {
+	UNINDENT.store(enabled, std::sync::atomic::Ordering::Relaxed);
+}
+
 pub(crate) struct PreviewEmoji {
 	at: usize,
 	/// Bytes of placeholder text standing in for `text`.
@@ -1862,6 +1879,36 @@ impl Formatted {
 			.filter(|_| !block.tag.is_empty())
 			.map_or_else(|| block.tag.clone(), str::to_owned);
 		let display = block.display.as_deref().unwrap_or(&block.code);
+		let display = if unindent() {
+			let lines: Vec<&str> = display.lines().collect();
+			if lines.len() > 1 {
+				let min_indent = lines
+					.iter()
+					.filter(|l| !l.trim().is_empty())
+					.map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+					.min()
+					.unwrap_or(0);
+				if min_indent > 0 {
+					lines
+						.iter()
+						.map(|l| {
+							if l.len() >= min_indent {
+								&l[min_indent..]
+							} else {
+								l
+							}
+						})
+						.collect::<Vec<_>>()
+						.join("\n")
+				} else {
+					display.to_owned()
+				}
+			} else {
+				display.to_owned()
+			}
+		} else {
+			display.to_owned()
+		};
 		let plain = [(0, display.len() as u32, crate::highlight::Token::Plain)];
 		let segments: &[crate::highlight::Segment] = if block.segments.is_empty() {
 			&plain
@@ -5811,5 +5858,56 @@ mod tests {
 		}
 		assert_eq!(cache.entries.len(), 500);
 		assert!(cache.bytes <= 1024 * 1024);
+	}
+
+	#[test]
+	fn a_code_block_is_unindented_only_when_asked() {
+		let indented = "    fn main() {\n        println!(\"hello\");\n    }";
+		let unindented = "fn main() {\n    println!(\"hello\");\n}";
+		let block = CodeBlock {
+			language: Some(crate::highlight::Language::Rust),
+			tag: "rs".into(),
+			code: indented.into(),
+			display: None,
+			segments: Vec::new(),
+		};
+		set_unindent(false);
+		let with_off = extract_display(&block);
+		assert_eq!(with_off, indented);
+		set_unindent(true);
+		let with_on = extract_display(&block);
+		assert_eq!(with_on, unindented);
+		set_unindent(false);
+	}
+
+	fn extract_display(block: &CodeBlock) -> String {
+		let display = block.display.as_deref().unwrap_or(&block.code);
+		if unindent() {
+			let lines: Vec<&str> = display.lines().collect();
+			if lines.len() > 1 {
+				let min_indent = lines
+					.iter()
+					.filter(|l| !l.trim().is_empty())
+					.map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+					.min()
+					.unwrap_or(0);
+				if min_indent > 0 {
+					return lines
+						.iter()
+						.map(|l| {
+							if l.len() >= min_indent {
+								&l[min_indent..]
+							} else {
+								l
+							}
+						})
+						.collect::<Vec<_>>()
+						.join("\n");
+				}
+			}
+			display.to_owned()
+		} else {
+			display.to_owned()
+		}
 	}
 }

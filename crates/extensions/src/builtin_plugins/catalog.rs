@@ -1149,9 +1149,9 @@ pub const ALL: &[Plugin] = &[
 		id: "unindent",
 		name: "Unindent",
 		description: "Trims leading indentation from codeblocks",
-		port: Port::Planned,
-		note: "Trims leading indentation from codeblocks",
-		setting: None,
+		port: Port::NativeOptIn,
+		note: "Leading whitespace common to all lines of a code block is stripped",
+		setting: Some(Setting::Unindent),
 	},
 	Plugin {
 		id: "unlockedAvatarZoom",

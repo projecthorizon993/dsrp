@@ -127,6 +127,9 @@ mod markdown;
 /// The code-block gap flag, re-exported so the desktop can set it without the markdown module
 /// becoming public API.
 pub use markdown::{fix_codeblock_gap, set_fix_codeblock_gap};
+/// The code-block unindent flag, re-exported so the desktop can set it without the markdown module
+/// becoming public API.
+pub use markdown::{set_unindent, unindent};
 #[cfg(test)]
 mod title_bar_tests;
 pub mod toasts;
@@ -511,6 +514,8 @@ pub struct MessagingUi {
 	pub reply_timestamp: bool,
 	/// Backs the `fixCodeblockGap` mod on the Built-in Mods page.
 	pub fix_codeblock_gap: bool,
+	/// Backs the `unindent` mod on the Built-in Mods page.
+	pub unindent: bool,
 }
 
 /// Context strip (reply/edit) drawn as the rounded top of the composer block.

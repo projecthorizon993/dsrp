@@ -6006,6 +6006,11 @@ impl Desktop {
 			ui::markdown::set_fix_codeblock_gap(self.messaging.fixCodeblockGap);
 			ctx.request_repaint();
 		}
+		// The code-block unindent is laid out inside markdown rendering.
+		if ui::markdown::unindent() != self.messaging.unindent {
+			ui::markdown::set_unindent(self.messaging.unindent);
+			ctx.request_repaint();
+		}
 	}
 	fn sync_window_effects(&mut self) {
 		if !self.transparency_available {
