@@ -146,6 +146,6 @@ jobs:
           set -eu
           test -n "$(ls -A release-assets)"
           gh release create "$TAG" \
-            --title "Serein $TAG" \
+            --title "dsrp $TAG" \
             --generate-notes \
             release-assets/*
