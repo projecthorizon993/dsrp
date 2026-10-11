@@ -1302,8 +1302,8 @@ mod tests {
 		assert!(!gated.accept(7, false));
 		assert!(is_keyframe(&[0, 0, 0, 1, 0x67, 1, 0, 0, 1, 0x65, 2]));
 		assert!(!is_keyframe(&[0, 0, 0, 1, 0x41, 9]));
-		assert!(bounded(1920, 1080).is_ok());
-		assert!(bounded(1920, 1081).is_err());
+		assert!(bounded(3840, 2160).is_ok());
+		assert!(bounded(3840, 2161).is_err());
 		assert!(bounded(0, 4).is_err());
 	}
 	#[test]
