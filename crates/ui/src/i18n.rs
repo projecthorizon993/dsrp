@@ -340,6 +340,119 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn every_key_used_in_source_exists_in_english() {
+		// The dsrp rename rewrote the key names in the locale files but missed several call
+		// sites, and a key with no definition renders as its own name instead of failing a
+		// build. Scan the workspace sources for literal lookups and require each one to exist.
+		let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+		let english = read_keys(&root.join("crates/ui/locales/en-US/main.ftl"));
+		assert!(english.len() > 1000, "en-US catalog looks truncated");
+
+		let mut sources = Vec::new();
+		for entry in ["crates", "apps"] {
+			collect_rs(&root.join(entry), &mut sources);
+		}
+		assert!(
+			sources.len() > 20,
+			"expected the workspace sources, found {}",
+			sources.len()
+		);
+
+		let mut missing = Vec::new();
+		for path in sources {
+			let text = std::fs::read_to_string(&path).expect("readable source");
+			for (key, at) in literal_lookups(&text) {
+				if !english.iter().any(|known| known == &key) {
+					missing.push(format!("{}: {key}", path.display()));
+				}
+				let _ = at;
+			}
+		}
+		missing.sort();
+		missing.dedup();
+		assert!(
+			missing.is_empty(),
+			"localization keys used in code but absent from en-US:\n{}",
+			missing.join("\n")
+		);
+	}
+
+	/// Key names on the left of `key = value` lines.
+	fn read_keys(path: &std::path::Path) -> Vec<String> {
+		std::fs::read_to_string(path)
+			.expect("locale file")
+			.lines()
+			.filter_map(|line| line.split_once('=').map(|(key, _)| key.trim().to_owned()))
+			.filter(|key| !key.is_empty() && !key.starts_with('#'))
+			.collect()
+	}
+
+	/// The string literal a lookup uses: `translate("key")` or `text("key")`.
+	fn literal_after(text: &str) -> Option<String> {
+		let open = text.find('"')?;
+		let rest = &text[open + 1..];
+		let close = rest.find('"')?;
+		Some(rest[..close].to_owned())
+	}
+
+	/// Keys passed to an i18n call, not every string that follows `i18n::`.
+	///
+	/// Deliberately limited to a literal string in first position. Plenty of call sites
+	/// pass a key computed at runtime (`translate_if_key(presence_status_key(status))`),
+	/// and no text scan can tell those apart from a key that is genuinely missing. This
+	/// catches the rename class of bug, where a key was renamed in the catalog and the
+	/// literal at the call site was left behind.
+	fn literal_lookups(text: &str) -> Vec<(String, usize)> {
+		let mut found = Vec::new();
+		// Match the call and its first argument together, so a key-like string belonging to
+		// a later call on the same line (`user_menu::popup(..with("member-menu"))`) cannot be
+		// mistaken for this one's argument.
+		for (at, _) in text.match_indices("i18n::") {
+			let after = at + "i18n::".len();
+			let rest = text[after..].trim_start();
+			let arg = rest
+				.find('(')
+				.map(|open| rest[open + 1..].trim_start())
+				.unwrap_or_default();
+			let calls = ["translate", "text", "format", "format_args"];
+			if !calls.iter().any(|call| {
+				rest.starts_with(call) && rest[call.len()..].trim_start().starts_with('(')
+			}) {
+				continue;
+			}
+			if !arg.starts_with('"') {
+				continue;
+			}
+			let Some(key) = literal_after(arg) else {
+				continue;
+			};
+			// A runtime key, or a format string rather than a key.
+			if key.contains('{') || key.contains(' ') || key.is_empty() {
+				continue;
+			}
+			found.push((key, at));
+		}
+		found
+	}
+
+	fn collect_rs(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+		let Ok(entries) = std::fs::read_dir(dir) else {
+			return;
+		};
+		for entry in entries.flatten() {
+			let path = entry.path();
+			if path.is_dir() {
+				if path.file_name().is_some_and(|name| name == "target") {
+					continue;
+				}
+				collect_rs(&path, out);
+			} else if path.extension().is_some_and(|ext| ext == "rs") {
+				out.push(path);
+			}
+		}
+	}
+
+	#[test]
 	fn negotiates_supported_languages_and_falls_back_to_english() {
 		assert_eq!(language_from_tag("cs-CZ"), Language::Czech);
 		assert_eq!(language_from_tag("cs_CZ"), Language::Czech);

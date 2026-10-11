@@ -1389,7 +1389,7 @@ impl MessagingUi {
 				design::hint(
 					ui,
 					&crate::i18n::translate(
-						"settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains",
+						"settings-storage-page-dsrp-does-not-collect-telemetry-or-upload-diagnostics-discord-retains",
 					),
 				);
 			},

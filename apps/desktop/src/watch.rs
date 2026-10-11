@@ -588,9 +588,9 @@ mod tests {
 	#[test]
 	fn watch_releases_large_pixel_capacity_after_a_resolution_drop() {
 		let mut picture = None;
-		let rgba = vec![255; 1920 * 1080 * 4];
+		let rgba = vec![255; 3840 * 2160 * 4];
 		assert!(store_frame(&mut picture, frame(1920, 1080, &rgba)));
-		assert_eq!(picture.as_ref().unwrap().pixels.len(), 1920 * 1080);
+		assert_eq!(picture.as_ref().unwrap().pixels.len(), 3840 * 2160);
 		assert!(store_frame(
 			&mut picture,
 			frame(16, 16, &[255; 16 * 16 * 4])
@@ -604,16 +604,16 @@ mod tests {
 	#[test]
 	fn watch_resolution_growth_does_not_double_the_pixel_capacity() {
 		let mut picture = None;
-		let rgba = vec![255; 1920 * 1080 * 4];
+		let rgba = vec![255; 3840 * 2160 * 4];
 		assert!(store_frame(
 			&mut picture,
 			frame(1600, 900, &rgba[..1600 * 900 * 4])
 		));
 		assert!(store_frame(&mut picture, frame(1920, 1080, &rgba)));
 		let latest = picture.take().unwrap();
-		assert_eq!(latest.size, [1920, 1080]);
-		assert_eq!(latest.pixels.len(), 1920 * 1080);
-		assert!(latest.pixels.capacity() <= 1920 * 1080);
+		assert_eq!(latest.size, [3840, 2160]);
+		assert_eq!(latest.pixels.len(), 3840 * 2160);
+		assert!(latest.pixels.capacity() <= 3840 * 2160);
 	}
 
 	#[test]
@@ -649,7 +649,7 @@ mod tests {
 					.expect("upload interval must be an integer")
 			})
 			.unwrap_or(0);
-		let rgba = vec![255; 1920 * 1080 * 4];
+		let rgba = vec![255; 3840 * 2160 * 4];
 		let mut samples = Vec::new();
 		for run in 0..6 {
 			let mut old = None;
@@ -659,7 +659,7 @@ mod tests {
 			for index in 0..120 {
 				if legacy {
 					old = Some(egui::ColorImage::from_rgba_unmultiplied(
-						[1920, 1080],
+						[3840, 2160],
 						&rgba,
 					));
 				} else {

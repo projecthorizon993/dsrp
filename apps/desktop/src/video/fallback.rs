@@ -99,7 +99,7 @@ fn convert(
 			"-i"])
 		.arg(&input)
 		.args(["-map", "0:v:0", "-map", "0:a:0?", "-sn", "-dn", "-map_metadata", "-1",
-			"-filter_threads", "1", "-vf", "scale=w='max(2,min(1920,iw))':h='max(2,min(1080,ih))':force_original_aspect_ratio=decrease:force_divisible_by=2",
+			"-filter_threads", "1", "-vf", "scale=w='max(2,min(3840,iw))':h='max(2,min(2160,ih))':force_original_aspect_ratio=decrease:force_divisible_by=2",
 			"-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
 			"-threads", "2", "-c:a", "aac", "-ac", "2", "-ar", "48000", "-fs", "104857600",
 			"-movflags", "+faststart", "-n"])

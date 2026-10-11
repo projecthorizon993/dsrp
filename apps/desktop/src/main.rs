@@ -4491,7 +4491,7 @@ impl Desktop {
 							ui.label(
 								ui::design::semibold(
 									ui,
-									ui::i18n::translate("main-sign-in-screen-serein"),
+									ui::i18n::translate("main-sign-in-screen-dsrp"),
 									16.0,
 								)
 								.color(p.text_strong),
@@ -5055,7 +5055,7 @@ impl Desktop {
 		let p = ui::design::palette(ui);
 		if ui::design::disclosure(
 			ui,
-			&ui::i18n::translate("main-sign-in-disclosures-about-serein"),
+			&ui::i18n::translate("main-sign-in-disclosures-about-dsrp"),
 			self.about_open,
 		)
 		.clicked()

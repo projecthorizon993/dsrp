@@ -137,9 +137,9 @@ impl VideoUi {
 		if self.active.is_none()
 			|| width == 0
 			|| height == 0
-			|| width > 1920
-			|| height > 1920
-			|| width * height > 1920 * 1080
+			|| width > 3840
+			|| height > 2160
+			|| width * height > 3840 * 2160
 			|| rgba.len() != width * height * 4
 		{
 			return false;
@@ -813,9 +813,9 @@ mod tests {
 				matches!(video.command.take(), Some(VideoCommand::Play(file)) if file == attachment)
 			);
 			assert!(video.seen);
-			assert!(!video.accept_frame(&ctx, 1921, 1080, &[]));
-			assert!(!video.accept_frame(&ctx, 1, 1921, &[]));
-			assert!(!video.accept_frame(&ctx, 1920, 1920, &[]));
+			assert!(!video.accept_frame(&ctx, 3841, 1080, &[]));
+			assert!(!video.accept_frame(&ctx, 1, 2161, &[]));
+			assert!(!video.accept_frame(&ctx, 3840, 2160, &[]));
 			assert!(!video.accept_frame(&ctx, usize::MAX, usize::MAX, &[]));
 			assert!(!video.accept_frame(&ctx, 1, 1, &[0]));
 			assert!(video.accept_frame(&ctx, 1, 1920, &vec![0; 1920 * 4]));

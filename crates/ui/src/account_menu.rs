@@ -860,7 +860,7 @@ impl MessagingUi {
 				ui,
 				&format!(
 					"{} {clears}.",
-					crate::i18n::translate("account-menu-custom-status-editor-serein-clears-it")
+					crate::i18n::translate("account-menu-custom-status-editor-dsrp-clears-it")
 				),
 			);
 		}
