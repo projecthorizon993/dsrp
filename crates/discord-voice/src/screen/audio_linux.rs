@@ -119,6 +119,10 @@ impl OwnApplication {
 			&& !binary.eq_ignore_ascii_case(&self.binary)
 			&& ![Some(binary), name, app_id].into_iter().flatten().any(|v| {
 				v.len() > 256
+					// Own app: skip our own screen-share audio, whatever it is called or titled. Both
+					// spellings are listed because a build predating the rename still reports the old
+					// name, and a stale process outliving an upgrade is exactly the case this guards.
+					|| v.to_ascii_lowercase().contains("dsrp")
 					|| v.to_ascii_lowercase().contains("serein")
 					|| v.eq_ignore_ascii_case("rustcord")
 			})
@@ -821,11 +825,20 @@ pub(super) fn check_isolation() {
 	assert!(!own.allows(Some("42"), Some("renamed-client"), None, None));
 	assert!(!own.allows(Some("999"), Some("dsrp"), None, None));
 	assert!(!own.allows(Some("999"), Some("other"), Some("dsrp call"), None));
+	// A process left over from before the rename is still our own audio, and must be excluded too.
+	assert!(!own.allows(Some("999"), Some("serein"), None, None));
+	assert!(!own.allows(Some("999"), Some("other"), Some("Serein call"), None));
 	assert!(!own.allows(
 		Some("999"),
 		Some("other"),
 		None,
 		Some("io.github.projecthorizon993.dsrp")
+	));
+	assert!(!own.allows(
+		Some("999"),
+		Some("other"),
+		None,
+		Some("cz.viceverse.serein")
 	));
 	assert!(!own.allows(None, Some("game"), None, None));
 	assert!(!own.allows(Some("123"), None, None, None));
