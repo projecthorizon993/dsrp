@@ -33,6 +33,7 @@
         "cargo xtask package --format dir",
         "cp -a dist/linux-root/usr/. /app/",
         "rm -f /app/share/icons/hicolor/1024x1024/apps/dsrp.png",
+        "mv /app/share/applications/dsrp.desktop /app/share/applications/io.github.projecthorizon993.dsrp.desktop",
         "install -Dm644 packaging/flatpak/io.github.projecthorizon993.dsrp.metainfo.xml /app/share/metainfo/io.github.projecthorizon993.dsrp.metainfo.xml"
       ],
       "sources": [{"type": "dir", "path": "source"}]
