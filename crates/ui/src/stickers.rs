@@ -279,6 +279,25 @@ pub(crate) fn message(
 	if response.clicked() {
 		*request = Some(sticker.id);
 	}
+	response.context_menu(|ui| {
+		if ui
+			.button(crate::i18n::translate("channel-menu-context-copy-link"))
+			.clicked()
+		{
+			let ext = match sticker.format_type {
+				1 => "png",
+				2 => "apng",
+				3 => "json",
+				4 => "gif",
+				_ => "png",
+			};
+			ui.ctx().copy_text(format!(
+				"https://media.discordapp.net/stickers/{}.{}",
+				sticker.id, ext
+			));
+			ui.close();
+		}
+	});
 	let colors = design::palette(ui);
 	let width = 340.0_f32.min((ui.ctx().content_rect().width() - 40.0).max(160.0));
 	egui::Popup::from_toggle_button_response(&response)
@@ -535,5 +554,67 @@ mod tests {
 		assert!(browser.query.is_empty());
 		assert_eq!(browser.target, None);
 		assert!(avatars.take_requests().is_empty());
+	}
+
+	#[test]
+	fn the_sticker_cdn_url_matches_the_format_type() {
+		fn cdn_url(sticker: &model::Sticker) -> String {
+			let ext = match sticker.format_type {
+				1 => "png",
+				2 => "apng",
+				3 => "json",
+				4 => "gif",
+				_ => "png",
+			};
+			format!(
+				"https://media.discordapp.net/stickers/{}.{}",
+				sticker.id, ext
+			)
+		}
+		let base = model::Sticker {
+			id: Id(9001),
+			name: "Synthetic".into(),
+			description: String::new(),
+			tags: "test".into(),
+			format_type: 1,
+			guild_id: None,
+			pack_id: None,
+			available: true,
+		};
+		assert_eq!(
+			cdn_url(&model::Sticker {
+				format_type: 1,
+				..base.clone()
+			}),
+			"https://media.discordapp.net/stickers/9001.png"
+		);
+		assert_eq!(
+			cdn_url(&model::Sticker {
+				format_type: 2,
+				..base.clone()
+			}),
+			"https://media.discordapp.net/stickers/9001.apng"
+		);
+		assert_eq!(
+			cdn_url(&model::Sticker {
+				format_type: 3,
+				..base.clone()
+			}),
+			"https://media.discordapp.net/stickers/9001.json"
+		);
+		assert_eq!(
+			cdn_url(&model::Sticker {
+				format_type: 4,
+				..base.clone()
+			}),
+			"https://media.discordapp.net/stickers/9001.gif"
+		);
+		assert_eq!(
+			cdn_url(&model::Sticker {
+				format_type: 99,
+				..base.clone()
+			}),
+			"https://media.discordapp.net/stickers/9001.png"
+		);
 	}
 }

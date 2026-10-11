@@ -229,8 +229,8 @@ pub const ALL: &[Plugin] = &[
 		id: "copyStickerLinks",
 		name: "CopyStickerLinks",
 		description: "Adds the ability to copy & open Sticker links",
-		port: Port::Planned,
-		note: "Adds the ability to copy & open Sticker links",
+		port: Port::Native,
+		note: "The sticker context menu copies the CDN link (media.discordapp.net/stickers/<id>.<ext>)",
 		setting: None,
 	},
 	Plugin {

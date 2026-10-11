@@ -37,6 +37,7 @@ const NATIVE = {
   userVoiceShow: 'Voice participants render in the member list',
   typingIndicator: 'The composer row names who is typing, and clears when nobody is',
   copyUserURLs: 'The user menu copies a discord.com/users link for the person it was opened on',
+  copyStickerLinks: 'The sticker context menu copies the CDN link (media.discordapp.net/stickers/<id>.<ext>)',
 };
 
 // Implemented, but not the way the mod does it. `setting` names the preference a switch drives, and
