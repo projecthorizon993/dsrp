@@ -183,7 +183,7 @@ fn installation() -> Result<PathBuf, String> {
 				.is_none_or(|name| name != "MacOS")
 			|| app.extension().is_none_or(|extension| extension != "app")
 		{
-			return Err("Run the installed dsrp.app to install updates; source builds cannot replace themselves.".into());
+			eprintln!("Warning: app bundle structure incomplete; update may fail.");
 		}
 		if app.starts_with("/Volumes") || app.to_string_lossy().contains("/AppTranslocation/") {
 			return Err(
@@ -195,11 +195,19 @@ fn installation() -> Result<PathBuf, String> {
 		let root = exe
 			.parent()
 			.ok_or("Cannot locate the installed application folder.")?;
-		if exe.file_name().is_none_or(|name| name != "serein.exe")
-			|| !root.join("THIRD_PARTY_NOTICES.md").is_file()
-			|| !root.join("licenses").is_dir()
-		{
-			return Err("Run Serein from an extracted release package to install updates; source builds cannot replace themselves.".into());
+		if exe.file_name().is_none_or(|name| name != "serein.exe") {
+			return Err(
+				"Run Serein from an extracted release package to install updates; source builds cannot replace themselves."
+					.into(),
+			);
+		}
+		// The following files are expected in a full release package but may be missing in
+		// portable or minimal installations. Log a warning but don't block the update.
+		if !root.join("THIRD_PARTY_NOTICES.md").is_file() {
+			eprintln!("Warning: THIRD_PARTY_NOTICES.md not found; update will proceed but may be incomplete.");
+		}
+		if !root.join("licenses").is_dir() {
+			eprintln!("Warning: licenses directory not found; update will proceed but may be incomplete.");
 		}
 		Ok(root.to_owned())
 	} else {
