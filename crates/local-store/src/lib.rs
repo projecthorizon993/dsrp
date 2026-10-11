@@ -99,6 +99,8 @@ pub struct AppPreferences {
 	pub plain_folder_icon: bool,
 	/// Device-local opt-in for the `replyTimestamp` mod; older saved preferences deserialize with it off.
 	pub reply_timestamp: bool,
+	/// Device-local opt-in for the `fixCodeblockGap` mod; older saved preferences deserialize with it off.
+	pub fix_codeblock_gap: bool,
 }
 impl Default for AppPreferences {
 	fn default() -> Self {
@@ -113,6 +115,7 @@ impl Default for AppPreferences {
 			hide_nitro_emojis: false,
 			local_nitro: false,
 			convert_emoticons: false,
+			fix_codeblock_gap: false,
 			reply_timestamp: false,
 			plain_folder_icon: false,
 			no_server_emojis: false,

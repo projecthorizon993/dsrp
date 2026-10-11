@@ -1174,6 +1174,9 @@ impl MessagingUi {
 							(&mut self.no_typing_animation, plugin.note)
 						}
 						Some(Setting::ExactTimestamps) => (&mut self.exact_timestamps, plugin.note),
+						Some(Setting::FixCodeblockGap) => {
+							(&mut self.fix_codeblock_gap, plugin.note)
+						}
 						Some(Setting::ReplyTimestamp) => (&mut self.reply_timestamp, plugin.note),
 						Some(Setting::PlainFolderIcon) => {
 							(&mut self.plain_folder_icon, plugin.note)

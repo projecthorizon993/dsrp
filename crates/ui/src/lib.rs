@@ -69,7 +69,6 @@ mod highlight;
 pub mod icons;
 mod invites;
 pub mod local_time;
-mod markdown;
 mod member_search;
 mod mentions;
 mod messaging_permissions;
@@ -124,6 +123,10 @@ mod timeline;
 /// The reply-preview timestamp flag, re-exported so the desktop can set it without the rest of the
 /// timeline becoming public API.
 pub use timeline::{reply_timestamps, set_reply_timestamps};
+mod markdown;
+/// The code-block gap flag, re-exported so the desktop can set it without the markdown module
+/// becoming public API.
+pub use markdown::{fix_codeblock_gap, set_fix_codeblock_gap};
 #[cfg(test)]
 mod title_bar_tests;
 pub mod toasts;
@@ -506,6 +509,8 @@ pub struct MessagingUi {
 	pub plain_folder_icon: bool,
 	/// Carry the sent time on a replied-message preview.
 	pub reply_timestamp: bool,
+	/// Backs the `fixCodeblockGap` mod on the Built-in Mods page.
+	pub fix_codeblock_gap: bool,
 }
 
 /// Context strip (reply/edit) drawn as the rounded top of the composer block.

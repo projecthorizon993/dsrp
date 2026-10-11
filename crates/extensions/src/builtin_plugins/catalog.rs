@@ -365,9 +365,9 @@ pub const ALL: &[Plugin] = &[
 		id: "fixCodeblockGap",
 		name: "FixCodeblockGap",
 		description: "Removes the gap between codeblocks and text below it",
-		port: Port::Planned,
-		note: "Removes the gap between codeblocks and text below it",
-		setting: None,
+		port: Port::NativeOptIn,
+		note: "The gap between a code block and the following text is removed",
+		setting: Some(Setting::FixCodeblockGap),
 	},
 	Plugin {
 		id: "fixImagesQuality",

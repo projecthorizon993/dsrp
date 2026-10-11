@@ -6001,6 +6001,11 @@ impl Desktop {
 			ui::set_reply_timestamps(self.messaging.reply_timestamp);
 			ctx.request_repaint();
 		}
+		// The code-block gap is laid out inside markdown rendering.
+		if ui::markdown::fix_codeblock_gap() != self.messaging.fixCodeblockGap {
+			ui::markdown::set_fix_codeblock_gap(self.messaging.fixCodeblockGap);
+			ctx.request_repaint();
+		}
 	}
 	fn sync_window_effects(&mut self) {
 		if !self.transparency_available {

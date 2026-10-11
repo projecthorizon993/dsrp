@@ -45,6 +45,7 @@ pub enum Setting {
 	/// Reporting elapsed time without rounding.
 	/// Reporting elapsed time without rounding.
 	ExactTimestamps,
+	FixCodeblockGap,
 	/// Carrying the sent time on a replied-message preview.
 	ReplyTimestamp,
 	/// Painting folder tiles without the server-icon mosaic.
@@ -244,7 +245,7 @@ mod tests {
 		// Sanity-bound the claim. These are exact counts on purpose: if a port lands, the count moves
 		// and whoever moved it has to update this, which is the point.
 		assert_eq!(
-			implemented, 29,
+			implemented, 30,
 			"implemented count changed; update this test"
 		);
 	}

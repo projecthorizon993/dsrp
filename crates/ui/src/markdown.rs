@@ -17,6 +17,23 @@ const PREVIEW_EMOJI_SIZE: f32 = 16.0;
 const PREVIEW_ICON_GAP: f32 = 2.0;
 const PREVIEW_TEXT_SIZE: f32 = 13.0;
 
+/// Whether the gap between a code block and the following text is removed.
+///
+/// A process-wide flag for the same reason as `local_time`: the code block is laid out deep
+/// inside the message renderer, and threading the preference through every call site is
+/// not worth the churn. Set once per frame alongside the other preference syncs.
+static FIX_CODEBLOCK_GAP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether the gap below a code block is removed.
+pub fn fix_codeblock_gap() -> bool {
+	FIX_CODEBLOCK_GAP.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Applies [`fix_codeblock_gap`]. Called once per frame alongside the other preference syncs.
+pub fn set_fix_codeblock_gap(fix: bool) {
+	FIX_CODEBLOCK_GAP.store(fix, std::sync::atomic::Ordering::Relaxed);
+}
+
 pub(crate) struct PreviewEmoji {
 	at: usize,
 	/// Bytes of placeholder text standing in for `text`.
@@ -1827,8 +1844,6 @@ impl Formatted {
 			},
 		);
 	}
-	/// Full-width framed block: optional language header with a copy control, then the
-	/// highlighted, wrapped, selectable monospace text.
 	fn show_code_block(
 		ui: &mut egui::Ui,
 		block: &CodeBlock,
@@ -1864,7 +1879,11 @@ impl Formatted {
 					.fill(card_surface.fill(ui, ui.visuals().code_bg_color))
 					.stroke(Stroke::new(1.0, colors.border))
 					.corner_radius(6)
-					.inner_margin(egui::Margin::symmetric(10, 8));
+					.inner_margin(if fix_codeblock_gap() {
+						egui::Margin::symmetric(10, 0)
+					} else {
+						egui::Margin::symmetric(10, 8)
+					});
 				let response = frame.show(ui, |ui| {
 					ui.set_width(ui.available_width());
 					ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);

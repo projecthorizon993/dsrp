@@ -107,6 +107,10 @@ const OPT_IN = {
     note: 'A replied-message preview carries the time it quotes, from loaded history only',
     setting: 'ReplyTimestamp',
   },
+  fixCodeblockGap: {
+    note: 'The gap between a code block and the following text is removed',
+    setting: 'FixCodeblockGap',
+  },
 };
 
 // Notes for planned entries whose Vencord description undersells what porting them here would take.
