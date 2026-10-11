@@ -123,7 +123,7 @@ mod timeline;
 /// The reply-preview timestamp flag, re-exported so the desktop can set it without the rest of the
 /// timeline becoming public API.
 pub use timeline::{reply_timestamps, set_reply_timestamps};
-mod markdown;
+pub mod markdown;
 /// The code-block gap flag, re-exported so the desktop can set it without the markdown module
 /// becoming public API.
 pub use markdown::{fix_codeblock_gap, set_fix_codeblock_gap};

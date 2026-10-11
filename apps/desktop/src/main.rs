@@ -6002,8 +6002,8 @@ impl Desktop {
 			ctx.request_repaint();
 		}
 		// The code-block gap is laid out inside markdown rendering.
-		if ui::markdown::fix_codeblock_gap() != self.messaging.fixCodeblockGap {
-			ui::markdown::set_fix_codeblock_gap(self.messaging.fixCodeblockGap);
+		if ui::markdown::fix_codeblock_gap() != self.messaging.fix_codeblock_gap {
+			ui::markdown::set_fix_codeblock_gap(self.messaging.fix_codeblock_gap);
 			ctx.request_repaint();
 		}
 		// The code-block unindent is laid out inside markdown rendering.
