@@ -155,9 +155,15 @@ sha256sums_x86_64=('1531196869160b63ec8c18ff9f1ada2c3f211533ff604f1adec50b2210ec
 
 package() {
   install -d "$pkgdir/usr/bin" "$pkgdir/usr/share/licenses/$pkgname"
-  install -m755 "$srcdir/usr/bin/dsrp" "$pkgdir/usr/bin/dsrp"
+  # The pinned source may predate the dsrp rename, so its payload is still
+  # installed as serein. Install whichever layout it ships, always as dsrp.
+  local bin=serein doc=serein
+  if [ -e "$srcdir/usr/bin/dsrp" ]; then
+    bin=dsrp doc=dsrp
+  fi
+  install -m755 "$srcdir/usr/bin/$bin" "$pkgdir/usr/bin/dsrp"
   install -d "$pkgdir/usr/share"
   cp -a "$srcdir/usr/share/." "$pkgdir/usr/share/"
-  install -m644 "$srcdir/usr/share/doc/dsrp/LICENSE-MIT" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-MIT"
-  install -m644 "$srcdir/usr/share/doc/dsrp/LICENSE-APACHE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
+  install -m644 "$srcdir/usr/share/doc/$doc/LICENSE-MIT" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-MIT"
+  install -m644 "$srcdir/usr/share/doc/$doc/LICENSE-APACHE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
 }
