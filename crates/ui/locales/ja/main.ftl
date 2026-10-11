@@ -213,7 +213,7 @@ account-menu-custom-status-editor-clear-after = 後クリア
 # Context: custom_status_editor
 account-menu-custom-status-editor-no-custom-status = カスタムステータスなし
 # Context: custom_status_editor
-account-menu-custom-status-editor-serein-clears-it = セレインがクリアする
+account-menu-custom-status-editor-dsrp-clears-it= セレインがクリアする
 # Context: custom_status_editor
 account-menu-custom-status-editor-status-text = ステータステキスト
 # Context: custom_status_editor
@@ -1621,7 +1621,7 @@ main-restoring-checking-your-saved-login = 保存されたログイン情報を�
 # Context: restoring
 main-restoring-connecting-to-discord = Discordに接続する
 # Context: restoring_screen
-main-restoring-screen-serein = セレイン
+main-restoring-screen-dsrp= セレイン
 # Context: restoring_screen
 main-restoring-screen-use-a-different-account = 別のアカウントを使用する
 # Context: restoring_screen
@@ -1633,7 +1633,7 @@ main-sign-in-consent-i-own-this-account-and-authorize-this-session = 私はこ�
 # Context: sign_in_consent
 main-sign-in-consent-passwords-and-2fa-stay-on-discord-s-own-login-page = パスワードと 2FA は Discord 自体のログイン ページに残ります。セッション トークンのみが OS 資格情報ストアに保持されます。
 # Context: sign_in_disclosures
-main-sign-in-disclosures-about-serein = セレインについて
+main-sign-in-disclosures-about-dsrp= セレインについて
 # Context: sign_in_disclosures
 main-sign-in-disclosures-connect-with-this-token = このトークンで接続します
 # Context: sign_in_disclosures
@@ -1651,7 +1651,7 @@ main-sign-in-header-sign-in-with-your-discord-account-to-get-started = 始める
 # Context: sign_in_header
 main-sign-in-header-welcome-back = おかえり
 # Context: sign_in_header
-main-sign-in-header-welcome-to-serein = セレインへようこそ
+main-sign-in-header-welcome-to-dsrp= セレインへようこそ
 # Context: sign_in_preview
 main-sign-in-status-copy-failure-details = エラーの詳細をコピー
 main-sign-in-preview-explore-the-offline-preview = オフライン プレビューを確認する
@@ -1660,7 +1660,7 @@ main-sign-in-preview-sample-conversations-no-discord-connection = 会話例。 D
 # Context: sign_in_screen
 main-sign-in-screen-independent-and-open-source-not-affiliated-with-discord = 独立したオープンソース。 Discordとは関係ありません。
 # Context: sign_in_screen
-main-sign-in-screen-serein = セレイン
+main-sign-in-screen-dsrp= セレイン
 # Context: ui
 main-ui-cancel = キャンセル
 # Context: ui
@@ -2247,7 +2247,7 @@ screen-body-refresh = リフレッシュ
 # Context: body
 screen-body-screen-or-window = スクリーンまたはウィンドウ
 # Context: body
-screen-body-send-what-your-mac-plays-along-with-the-screen-serein = Mac で再生しているものを画面とともに送信します。セレイン自身の通話音声は省略されています。
+screen-body-send-what-your-mac-plays-along-with-the-screen-dsrp= Mac で再生しているものを画面とともに送信します。セレイン自身の通話音声は省略されています。
 # Context: body
 screen-body-share-sound-from-other-apps-even-when-sharing-one-window = 1 つのウィンドウを共有している場合でも、他のアプリのサウンドを共有します。 Serein 自身の音声は省略されています。
 # Context: body
@@ -3458,7 +3458,7 @@ settings-appearance-settings-primary-color = 原色
 # Context: appearance_settings
 settings-appearance-settings-reset = リセット
 # Context: appearance_settings
-settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = これを変更した後、Serein を再起動します。テーマは有効になっている間、効果をカスタマイズできます。
+settings-appearance-settings-restart-dsrp-after-changing-this-themes-can-customize-effects-while= これを変更した後、Serein を再起動します。テーマは有効になっている間、効果をカスタマイズできます。
 # Context: appearance_settings
 settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = アクティブなテーマが独自のアクセントをもたらします。テーマの使用中はそれが引き継がれます。
 # Context: appearance_settings
@@ -3499,7 +3499,7 @@ settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bound
 # Context: storage_page
 settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = キャッシュされたメッセージとメディアを削除します。下書きとログインはそのまま残ります。
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein はテレメトリを収集したり、診断をアップロードしたりしません。 Discord は、独自のポリシーに従ってサービス側のデータを保持します。
+settings-storage-page-dsrp-does-not-collect-telemetry-or-upload-diagnostics-discord-retains= Serein はテレメトリを収集したり、診断をアップロードしたりしません。 Discord は、独自のポリシーに従ってサービス側のデータを保持します。
 # Context: storage_page
 settings-storage-page-your-privacy = あなたのプライバシー
 
@@ -3922,7 +3922,7 @@ updates-update-settings-release-channel = リリースチャンネル
 # Context: update_settings
 updates-update-settings-restart-to-update = 更新するには再起動してください
 # Context: update_settings
-updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Serein はディストリビューション経由でインストールされました。ターミナルでこれを実行して更新します。
+updates-update-settings-dsrp-was-installed-via-your-distribution-run-this-in-a= Serein はディストリビューション経由でインストールされました。ターミナルでこれを実行して更新します。
 # Context: update_settings
 updates-update-settings-support-diagnostics = サポートと診断
 # Context: update_log

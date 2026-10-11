@@ -212,7 +212,7 @@ account-menu-custom-status-editor-clear-after = Limpar depois
 # Context: custom_status_editor
 account-menu-custom-status-editor-no-custom-status = Nenhum status personalizado
 # Context: custom_status_editor
-account-menu-custom-status-editor-serein-clears-it = Serein limpa
+account-menu-custom-status-editor-dsrp-clears-it= Serein limpa
 # Context: custom_status_editor
 account-menu-custom-status-editor-status-text = Texto de status
 # Context: custom_status_editor
@@ -1620,7 +1620,7 @@ main-restoring-checking-your-saved-login = Verificando seu login salvo
 # Context: restoring
 main-restoring-connecting-to-discord = Conectando-se ao Discord
 # Context: restoring_screen
-main-restoring-screen-serein = Serein
+main-restoring-screen-dsrp= Serein
 # Context: restoring_screen
 main-restoring-screen-use-a-different-account = Use uma conta diferente
 # Context: restoring_screen
@@ -1632,7 +1632,7 @@ main-sign-in-consent-i-own-this-account-and-authorize-this-session = Eu possuo e
 # Context: sign_in_consent
 main-sign-in-consent-passwords-and-2fa-stay-on-discord-s-own-login-page = As senhas e 2FA permanecem na página de login do Discord; apenas o token da sessão é mantido no armazenamento de credenciais do seu sistema operacional.
 # Context: sign_in_disclosures
-main-sign-in-disclosures-about-serein = Sobre Serein
+main-sign-in-disclosures-about-dsrp= Sobre Serein
 # Context: sign_in_disclosures
 main-sign-in-disclosures-connect-with-this-token = Conecte-se com este token
 # Context: sign_in_disclosures
@@ -1650,7 +1650,7 @@ main-sign-in-header-sign-in-with-your-discord-account-to-get-started = Faça log
 # Context: sign_in_header
 main-sign-in-header-welcome-back = bem vindo de volta
 # Context: sign_in_header
-main-sign-in-header-welcome-to-serein = Bem-vindo ao Serein
+main-sign-in-header-welcome-to-dsrp= Bem-vindo ao Serein
 # Context: sign_in_preview
 main-sign-in-status-copy-failure-details = Copiar detalhes da falha
 main-sign-in-preview-explore-the-offline-preview = Explore a visualização off-line
@@ -1659,7 +1659,7 @@ main-sign-in-preview-sample-conversations-no-discord-connection = Exemplos de co
 # Context: sign_in_screen
 main-sign-in-screen-independent-and-open-source-not-affiliated-with-discord = Independente e de código aberto. Não afiliado ao Discord.
 # Context: sign_in_screen
-main-sign-in-screen-serein = Serein
+main-sign-in-screen-dsrp= Serein
 # Context: ui
 main-ui-cancel = Cancelar
 # Context: ui
@@ -2246,7 +2246,7 @@ screen-body-refresh = Atualizar
 # Context: body
 screen-body-screen-or-window = Tela ou janela
 # Context: body
-screen-body-send-what-your-mac-plays-along-with-the-screen-serein = Envie o que o seu Mac reproduz junto com a tela. O áudio da chamada de Serein foi deixado de fora.
+screen-body-send-what-your-mac-plays-along-with-the-screen-dsrp= Envie o que o seu Mac reproduz junto com a tela. O áudio da chamada de Serein foi deixado de fora.
 # Context: body
 screen-body-share-sound-from-other-apps-even-when-sharing-one-window = Compartilhe sons de outros aplicativos, mesmo ao compartilhar uma janela. O áudio do próprio Serein foi deixado de fora.
 # Context: body
@@ -3457,7 +3457,7 @@ settings-appearance-settings-primary-color = Cor primária
 # Context: appearance_settings
 settings-appearance-settings-reset = Reiniciar
 # Context: appearance_settings
-settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = Reinicie o Serein depois de alterar isso. Os temas podem personalizar efeitos enquanto ativados.
+settings-appearance-settings-restart-dsrp-after-changing-this-themes-can-customize-effects-while= Reinicie o Serein depois de alterar isso. Os temas podem personalizar efeitos enquanto ativados.
 # Context: appearance_settings
 settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = O tema ativo traz um sotaque próprio; ele assume o controle enquanto o tema está em uso.
 # Context: appearance_settings
@@ -3498,7 +3498,7 @@ settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bound
 # Context: storage_page
 settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = Remove mensagens e mídia em cache. Rascunhos e seu login permanecem.
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein não coleta telemetria nem carrega diagnósticos. O Discord retém dados do lado do serviço de acordo com suas próprias políticas.
+settings-storage-page-dsrp-does-not-collect-telemetry-or-upload-diagnostics-discord-retains= Serein não coleta telemetria nem carrega diagnósticos. O Discord retém dados do lado do serviço de acordo com suas próprias políticas.
 # Context: storage_page
 settings-storage-page-your-privacy = Sua privacidade
 
@@ -3925,7 +3925,7 @@ updates-update-settings-release-channel = Canal de lançamento
 # Context: update_settings
 updates-update-settings-restart-to-update = Reinicie para atualizar
 # Context: update_settings
-updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Serein foi instalado através de sua distribuição. Execute isso em um terminal para atualizar.
+updates-update-settings-dsrp-was-installed-via-your-distribution-run-this-in-a= Serein foi instalado através de sua distribuição. Execute isso em um terminal para atualizar.
 # Context: update_settings
 updates-update-settings-support-diagnostics = Suporte e diagnóstico
 # Context: update_log

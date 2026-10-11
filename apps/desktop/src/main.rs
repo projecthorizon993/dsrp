@@ -4356,7 +4356,7 @@ impl Desktop {
 							ui.label(
 								ui::design::semibold(
 									ui,
-									ui::i18n::translate("main-restoring-screen-serein"),
+									ui::i18n::translate("main-restoring-screen-dsrp"),
 									16.0,
 								)
 								.color(p.muted),

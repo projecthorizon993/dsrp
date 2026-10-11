@@ -213,7 +213,7 @@ account-menu-custom-status-editor-clear-after = Şu tarihten sonra temizle:
 # Context: custom_status_editor
 account-menu-custom-status-editor-no-custom-status = Özel durum yok
 # Context: custom_status_editor
-account-menu-custom-status-editor-serein-clears-it = Serein temizliyor
+account-menu-custom-status-editor-dsrp-clears-it= Serein temizliyor
 # Context: custom_status_editor
 account-menu-custom-status-editor-status-text = Durum metni
 # Context: custom_status_editor
@@ -1621,7 +1621,7 @@ main-restoring-checking-your-saved-login = Kayıtlı giriş bilgileriniz kontrol
 # Context: restoring
 main-restoring-connecting-to-discord = Discord'a bağlanma
 # Context: restoring_screen
-main-restoring-screen-serein = Serin
+main-restoring-screen-dsrp= Serin
 # Context: restoring_screen
 main-restoring-screen-use-a-different-account = Farklı bir hesap kullanın
 # Context: restoring_screen
@@ -1633,7 +1633,7 @@ main-sign-in-consent-i-own-this-account-and-authorize-this-session = Bu hesabın
 # Context: sign_in_consent
 main-sign-in-consent-passwords-and-2fa-stay-on-discord-s-own-login-page = Şifreler ve 2FA, Discord'un kendi giriş sayfasında kalır; İşletim sisteminizin kimlik bilgileri deposunda yalnızca oturum belirteci tutulur.
 # Context: sign_in_disclosures
-main-sign-in-disclosures-about-serein = Serein hakkında
+main-sign-in-disclosures-about-dsrp= Serein hakkında
 # Context: sign_in_disclosures
 main-sign-in-disclosures-connect-with-this-token = Bu jetonla bağlanın
 # Context: sign_in_disclosures
@@ -1651,7 +1651,7 @@ main-sign-in-header-sign-in-with-your-discord-account-to-get-started = Başlamak
 # Context: sign_in_header
 main-sign-in-header-welcome-back = tekrar hoşgeldiniz
 # Context: sign_in_header
-main-sign-in-header-welcome-to-serein = Serein'e hoş geldiniz
+main-sign-in-header-welcome-to-dsrp= Serein'e hoş geldiniz
 # Context: sign_in_preview
 main-sign-in-status-copy-failure-details = Hata ayrıntılarını kopyala
 main-sign-in-preview-explore-the-offline-preview = Çevrimdışı önizlemeyi keşfedin
@@ -1660,7 +1660,7 @@ main-sign-in-preview-sample-conversations-no-discord-connection = Örnek konuşm
 # Context: sign_in_screen
 main-sign-in-screen-independent-and-open-source-not-affiliated-with-discord = Bağımsız ve açık kaynak. Discord'a bağlı değildir.
 # Context: sign_in_screen
-main-sign-in-screen-serein = Serin
+main-sign-in-screen-dsrp= Serin
 # Context: ui
 main-ui-cancel = İptal etmek
 # Context: ui
@@ -2247,7 +2247,7 @@ screen-body-refresh = Yenile
 # Context: body
 screen-body-screen-or-window = Ekran veya pencere
 # Context: body
-screen-body-send-what-your-mac-plays-along-with-the-screen-serein = Mac'inizin oynattıklarını ekranla birlikte gönderin. Serein'in kendi çağrı sesi dışarıda bırakıldı.
+screen-body-send-what-your-mac-plays-along-with-the-screen-dsrp= Mac'inizin oynattıklarını ekranla birlikte gönderin. Serein'in kendi çağrı sesi dışarıda bırakıldı.
 # Context: body
 screen-body-share-sound-from-other-apps-even-when-sharing-one-window = Bir pencereyi paylaşırken bile diğer uygulamalardaki sesi paylaşın. Serein'in kendi sesi dışarıda bırakıldı.
 # Context: body
@@ -3458,7 +3458,7 @@ settings-appearance-settings-primary-color = Ana renk
 # Context: appearance_settings
 settings-appearance-settings-reset = Sıfırla
 # Context: appearance_settings
-settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = Bunu değiştirdikten sonra Serein'i yeniden başlatın. Temalar etkinleştirildiğinde efektleri özelleştirebilir.
+settings-appearance-settings-restart-dsrp-after-changing-this-themes-can-customize-effects-while= Bunu değiştirdikten sonra Serein'i yeniden başlatın. Temalar etkinleştirildiğinde efektleri özelleştirebilir.
 # Context: appearance_settings
 settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = Aktif tema kendi aksanını da beraberinde getiriyor; tema kullanımdayken görevi devralır.
 # Context: appearance_settings
@@ -3499,7 +3499,7 @@ settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bound
 # Context: storage_page
 settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = Önbelleğe alınmış mesajları ve medyayı kaldırır. Taslaklar ve giriş bilgileriniz.
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein telemetri toplamaz veya tanılamayı yüklemez. Discord, hizmet tarafındaki verileri kendi politikalarına göre saklar.
+settings-storage-page-dsrp-does-not-collect-telemetry-or-upload-diagnostics-discord-retains= Serein telemetri toplamaz veya tanılamayı yüklemez. Discord, hizmet tarafındaki verileri kendi politikalarına göre saklar.
 # Context: storage_page
 settings-storage-page-your-privacy = Gizliliğiniz
 
@@ -3922,7 +3922,7 @@ updates-update-settings-release-channel = Yayın kanalı
 # Context: update_settings
 updates-update-settings-restart-to-update = Güncellemek için yeniden başlatın
 # Context: update_settings
-updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Serein dağıtımınız aracılığıyla kuruldu. Güncellemek için bunu bir terminalde çalıştırın.
+updates-update-settings-dsrp-was-installed-via-your-distribution-run-this-in-a= Serein dağıtımınız aracılığıyla kuruldu. Güncellemek için bunu bir terminalde çalıştırın.
 # Context: update_settings
 updates-update-settings-support-diagnostics = Destek ve teşhis
 # Context: update_log

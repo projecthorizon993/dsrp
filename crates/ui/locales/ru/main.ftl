@@ -213,7 +213,7 @@ account-menu-custom-status-editor-clear-after = Очистить после
 # Context: custom_status_editor
 account-menu-custom-status-editor-no-custom-status = Нет индивидуального статуса
 # Context: custom_status_editor
-account-menu-custom-status-editor-serein-clears-it = Серейн очищает это
+account-menu-custom-status-editor-dsrp-clears-it= Серейн очищает это
 # Context: custom_status_editor
 account-menu-custom-status-editor-status-text = Текст статуса
 # Context: custom_status_editor
@@ -1621,7 +1621,7 @@ main-restoring-checking-your-saved-login = Проверка сохраненно
 # Context: restoring
 main-restoring-connecting-to-discord = Подключение к Дискорду
 # Context: restoring_screen
-main-restoring-screen-serein = Серейн
+main-restoring-screen-dsrp= Серейн
 # Context: restoring_screen
 main-restoring-screen-use-a-different-account = Использовать другую учетную запись
 # Context: restoring_screen
@@ -1633,7 +1633,7 @@ main-sign-in-consent-i-own-this-account-and-authorize-this-session = Я влад
 # Context: sign_in_consent
 main-sign-in-consent-passwords-and-2fa-stay-on-discord-s-own-login-page = Пароли и 2FA остаются на собственной странице входа в Discord; в хранилище учетных данных вашей ОС сохраняется только токен сеанса.
 # Context: sign_in_disclosures
-main-sign-in-disclosures-about-serein = О Серейн
+main-sign-in-disclosures-about-dsrp= О Серейн
 # Context: sign_in_disclosures
 main-sign-in-disclosures-connect-with-this-token = Подключиться с помощью этого токена
 # Context: sign_in_disclosures
@@ -1651,7 +1651,7 @@ main-sign-in-header-sign-in-with-your-discord-account-to-get-started = Войд�
 # Context: sign_in_header
 main-sign-in-header-welcome-back = Добро пожаловать
 # Context: sign_in_header
-main-sign-in-header-welcome-to-serein = Добро пожаловать в Серейн
+main-sign-in-header-welcome-to-dsrp= Добро пожаловать в Серейн
 # Context: sign_in_preview
 main-sign-in-status-copy-failure-details = Копировать сведения об ошибке
 main-sign-in-preview-explore-the-offline-preview = Ознакомьтесь с предварительной версией в автономном режиме
@@ -1660,7 +1660,7 @@ main-sign-in-preview-sample-conversations-no-discord-connection = Примеры
 # Context: sign_in_screen
 main-sign-in-screen-independent-and-open-source-not-affiliated-with-discord = Независимый и открытый исходный код. Не связан с Discord.
 # Context: sign_in_screen
-main-sign-in-screen-serein = Серейн
+main-sign-in-screen-dsrp= Серейн
 # Context: ui
 main-ui-cancel = Отмена
 # Context: ui
@@ -2247,7 +2247,7 @@ screen-body-refresh = Обновить
 # Context: body
 screen-body-screen-or-window = Экран или окно
 # Context: body
-screen-body-send-what-your-mac-plays-along-with-the-screen-serein = Отправьте то, что ваш Mac воспроизводит вместе с экраном. Звук звонка Серейн не учитывается.
+screen-body-send-what-your-mac-plays-along-with-the-screen-dsrp= Отправьте то, что ваш Mac воспроизводит вместе с экраном. Звук звонка Серейн не учитывается.
 # Context: body
 screen-body-share-sound-from-other-apps-even-when-sharing-one-window = Делитесь звуком из других приложений, даже если вы делитесь одним окном. Собственный звук Серейн не учитывается.
 # Context: body
@@ -3458,7 +3458,7 @@ settings-appearance-settings-primary-color = Основной цвет
 # Context: appearance_settings
 settings-appearance-settings-reset = Перезагрузить
 # Context: appearance_settings
-settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = Перезапустите Sein после изменения. Когда темы включены, можно настраивать эффекты.
+settings-appearance-settings-restart-dsrp-after-changing-this-themes-can-customize-effects-while= Перезапустите Sein после изменения. Когда темы включены, можно настраивать эффекты.
 # Context: appearance_settings
 settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = Активная тема вносит свой акцент; он вступает во владение, пока используется тема.
 # Context: appearance_settings
@@ -3499,7 +3499,7 @@ settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bound
 # Context: storage_page
 settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = Удаляет кэшированные сообщения и медиа. Черновики и ваш логин остаются.
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein не собирает телеметрию и не загружает диагностические данные. Discord сохраняет данные на стороне сервиса в соответствии со своей собственной политикой.
+settings-storage-page-dsrp-does-not-collect-telemetry-or-upload-diagnostics-discord-retains= Serein не собирает телеметрию и не загружает диагностические данные. Discord сохраняет данные на стороне сервиса в соответствии со своей собственной политикой.
 # Context: storage_page
 settings-storage-page-your-privacy = Ваша конфиденциальность
 
@@ -3927,7 +3927,7 @@ updates-update-settings-release-channel = Канал выпуска
 # Context: update_settings
 updates-update-settings-restart-to-update = Перезапустите, чтобы обновить
 # Context: update_settings
-updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Serein был установлен через ваш дистрибутив. Запустите это в терминале для обновления.
+updates-update-settings-dsrp-was-installed-via-your-distribution-run-this-in-a= Serein был установлен через ваш дистрибутив. Запустите это в терминале для обновления.
 # Context: update_settings
 updates-update-settings-support-diagnostics = Поддержка и диагностика
 # Context: update_log

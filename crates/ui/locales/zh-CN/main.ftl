@@ -212,7 +212,7 @@ account-menu-custom-status-editor-clear-after = 多久后清除
 # Context: custom_status_editor
 account-menu-custom-status-editor-no-custom-status = 无自订状态
 # Context: custom_status_editor
-account-menu-custom-status-editor-serein-clears-it = Serein 会自动清除
+account-menu-custom-status-editor-dsrp-clears-it= Serein 会自动清除
 # Context: custom_status_editor
 account-menu-custom-status-editor-status-text = 状态文字
 # Context: custom_status_editor
@@ -1636,7 +1636,7 @@ main-restoring-checking-your-saved-login = 正在检查已保存的登录信息
 # Context: restoring
 main-restoring-connecting-to-discord = 正在连接 Discord
 # Context: restoring_screen
-main-restoring-screen-serein = Serein
+main-restoring-screen-dsrp= Serein
 # Context: restoring_screen
 main-restoring-screen-use-a-different-account = 使用其他账户
 # Context: restoring_screen
@@ -1648,7 +1648,7 @@ main-sign-in-consent-i-own-this-account-and-authorize-this-session = 该账户�
 # Context: sign_in_consent
 main-sign-in-consent-passwords-and-2fa-stay-on-discord-s-own-login-page = 密码与 2FA 只留在 Discord 自己的登录页；只有会话令牌会存入你的操作系统凭据存储区。
 # Context: sign_in_disclosures
-main-sign-in-disclosures-about-serein = 关于 Serein
+main-sign-in-disclosures-about-dsrp= 关于 Serein
 # Context: sign_in_disclosures
 main-sign-in-disclosures-connect-with-this-token = 使用该令牌连接
 # Context: sign_in_disclosures
@@ -1666,7 +1666,7 @@ main-sign-in-header-sign-in-with-your-discord-account-to-get-started = 登录你
 # Context: sign_in_header
 main-sign-in-header-welcome-back = 欢迎回来
 # Context: sign_in_header
-main-sign-in-header-welcome-to-serein = 欢迎使用 Serein
+main-sign-in-header-welcome-to-dsrp= 欢迎使用 Serein
 # Context: sign_in_preview
 main-sign-in-status-copy-failure-details = 复制失败详细信息
 main-sign-in-preview-explore-the-offline-preview = 浏览离线预览
@@ -1675,7 +1675,7 @@ main-sign-in-preview-sample-conversations-no-discord-connection = 示例对话�
 # Context: sign_in_screen
 main-sign-in-screen-independent-and-open-source-not-affiliated-with-discord = 独立且开源。与 Discord 无关联。
 # Context: sign_in_screen
-main-sign-in-screen-serein = Serein
+main-sign-in-screen-dsrp= Serein
 # Context: ui
 main-ui-cancel = 取消
 # Context: ui
@@ -2277,7 +2277,7 @@ screen-body-refresh = 刷新
 # Context: body
 screen-body-screen-or-window = 屏幕或窗口
 # Context: body
-screen-body-send-what-your-mac-plays-along-with-the-screen-serein = 连同画面一起送出你的 Mac 播放的声音。不含 Serein 本身的通话音频。
+screen-body-send-what-your-mac-plays-along-with-the-screen-dsrp= 连同画面一起送出你的 Mac 播放的声音。不含 Serein 本身的通话音频。
 # Context: body
 screen-body-share-sound-from-other-apps-even-when-sharing-one-window = 即使只分享一个窗口，也能送出其他应用程序的声音。不含 Serein 本身的音频。
 # Context: body
@@ -3488,7 +3488,7 @@ settings-appearance-settings-primary-color = 主色
 # Context: appearance_settings
 settings-appearance-settings-reset = 重置
 # Context: appearance_settings
-settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = 修改后需重新启动 Serein。启用主题时可自行设置效果。
+settings-appearance-settings-restart-dsrp-after-changing-this-themes-can-customize-effects-while= 修改后需重新启动 Serein。启用主题时可自行设置效果。
 # Context: appearance_settings
 settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = 当前主题自带强调色；使用该主题期间由其接管。
 # Context: appearance_settings
@@ -3532,7 +3532,7 @@ settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bound
 # Context: storage_page
 settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = 会清除缓存的消息与媒体。草稿和你的登录会保留。
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein 不收集遥测数据，也不上传诊断信息。Discord 的服务端数据按其自身政策保留。
+settings-storage-page-dsrp-does-not-collect-telemetry-or-upload-diagnostics-discord-retains= Serein 不收集遥测数据，也不上传诊断信息。Discord 的服务端数据按其自身政策保留。
 # Context: storage_page
 settings-storage-page-your-privacy = 你的隐私
 
@@ -3960,7 +3960,7 @@ updates-update-settings-release-channel = 发布渠道
 # Context: update_settings
 updates-update-settings-restart-to-update = 重启以更新
 # Context: update_settings
-updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Serein 是以发行版方式安装的。请在终端中执行此命令更新。
+updates-update-settings-dsrp-was-installed-via-your-distribution-run-this-in-a= Serein 是以发行版方式安装的。请在终端中执行此命令更新。
 # Context: update_settings
 updates-update-settings-support-diagnostics = 支持与诊断
 # Context: update_log
