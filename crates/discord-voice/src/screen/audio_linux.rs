@@ -816,11 +816,11 @@ fn exclude(excluded: &mut Vec<Input>, input: Input) {
 pub(super) fn check_isolation() {
 	let own = OwnApplication {
 		pid: 42,
-		binary: "serein".into(),
+		binary: "dsrp".into(),
 	};
 	assert!(!own.allows(Some("42"), Some("renamed-client"), None, None));
-	assert!(!own.allows(Some("999"), Some("serein"), None, None));
-	assert!(!own.allows(Some("999"), Some("other"), Some("Serein call"), None));
+	assert!(!own.allows(Some("999"), Some("dsrp"), None, None));
+	assert!(!own.allows(Some("999"), Some("other"), Some("dsrp call"), None));
 	assert!(!own.allows(
 		Some("999"),
 		Some("other"),
