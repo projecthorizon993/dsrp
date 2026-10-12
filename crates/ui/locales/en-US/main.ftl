@@ -3007,8 +3007,8 @@ server-menu-header-server-menu = Server menu
 server-menu-leave-item-leave-server = Leave server
 # Context: read_item
 server-menu-read-item-mark-as-read = Mark As Read
-# Context: read_all_item
-server-menu-read-all-item-mark-all-servers-read = Mark All Servers Read
+# Context: the rail tile under the home button (readAllNotificationsButton)
+notifications-rail-mark-all-servers-read = Mark all servers read
 # Context: settings_item
 server-menu-settings-item-server-settings = Server Settings
 # Context: show

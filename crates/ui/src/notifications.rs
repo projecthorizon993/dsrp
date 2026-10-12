@@ -301,6 +301,47 @@ impl MessagingUi {
 					}
 					self.search.open = false;
 				}
+				// `readAllNotificationsButton`: acknowledge every server at once, under the
+				// home button. Always occupies its tile so the rail never reflows; it is only
+				// live while some server actually holds an unread channel.
+				{
+					let enabled = state.can_mark_all_servers_read();
+					let (rect, response) =
+						ui.allocate_exact_size(egui::Vec2::splat(RAIL_TILE), egui::Sense::click());
+					let hovered = response.hovered() || response.has_focus();
+					ui.painter().rect_filled(
+						rect,
+						egui::lerp(16.0f32..=11.0, if hovered { 1.0 } else { 0.0 }).round() as u8,
+						if hovered && enabled {
+							colors.accent
+						} else {
+							colors.raised
+						},
+					);
+					let tint = if enabled {
+						colors.text
+					} else {
+						// Disabled reads as unavailable without a second glyph.
+						colors.text.gamma_multiply(0.4)
+					};
+					crate::icons::paint(
+						ui.painter(),
+						crate::icons::Icon::Check,
+						rect.shrink(11.0),
+						tint,
+					);
+					let label = crate::i18n::translate("notifications-rail-mark-all-servers-read");
+					response.widget_info(|| {
+						egui::WidgetInfo::labeled(egui::Role::Button, enabled, label.clone())
+					});
+					design::rail_name(&response, &label);
+					if enabled
+						&& response.clicked()
+						&& let Some(command) = state.mark_all_servers_read()
+					{
+						commands.push(command);
+					}
+				}
 				self.scroll
 					.attach(
 						ui,
@@ -496,6 +537,30 @@ mod tests {
 		assert_eq!(view.guild, None);
 		assert_eq!(state.selected, None);
 		assert!(!view.search.open);
+	}
+
+	#[test]
+	fn mark_all_servers_rail_tile_queues_one_bulk_acknowledgement() {
+		// The tile under the home button must offer the bulk action whenever a server
+		// holds unread messages, and clicking it must queue exactly one command.
+		let mut state = test_support::notification_demo_state();
+		assert!(
+			state.can_mark_all_servers_read(),
+			"the fixture has an unread server channel"
+		);
+		let mut commands = Vec::new();
+		let Some(command) = state.mark_all_servers_read() else {
+			panic!("the tile must be live while a server is unread");
+		};
+		assert!(
+			matches!(command, Command::MarkAllServersRead { .. }),
+			"the tile issues the bulk acknowledgement, not a per-server one"
+		);
+		// Queueing consumes the pending slot, so the tile goes dead rather than
+		// letting a second click pile writes on top of the first.
+		assert!(!state.can_mark_all_servers_read());
+		commands.push(command);
+		assert_eq!(commands.len(), 1);
 	}
 
 	#[test]

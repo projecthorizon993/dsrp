@@ -4337,11 +4337,6 @@ impl MessagingUi {
 		{
 			commands.push(command);
 		}
-		if std::mem::take(&mut self.server_menu.mark_all_read_requested)
-			&& let Some(command) = state.mark_all_servers_read()
-		{
-			commands.push(command);
-		}
 		let selected_voice = state
 			.selected
 			.and_then(|id| state.channel(id))
