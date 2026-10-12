@@ -22,6 +22,8 @@ impl Dialog {
 pub(super) struct ServerMenu {
 	pub settings_requested: Option<Id>,
 	pub mark_read_requested: Option<Id>,
+	/// Set when "Mark all servers read" is chosen; not tied to one server.
+	pub mark_all_read_requested: bool,
 	dialog: Option<Dialog>,
 	generation: u64,
 	invite: InviteDialog,
@@ -64,6 +66,26 @@ impl ServerMenu {
 			.clicked()
 		{
 			self.mark_read_requested = Some(guild);
+			ui.close();
+			return true;
+		}
+		false
+	}
+	/// Acknowledge every server holding unread channels, not just this one.
+	pub fn read_all_item(&mut self, ui: &mut egui::Ui, state: &State) -> bool {
+		if ui
+			.add_enabled_ui(state.can_mark_all_servers_read(), |ui| {
+				menu_row(
+					ui,
+					icons::Icon::Check,
+					&crate::i18n::translate("server-menu-read-all-item-mark-all-servers-read"),
+					design::palette(ui).text,
+				)
+			})
+			.inner
+			.clicked()
+		{
+			self.mark_all_read_requested = true;
 			ui.close();
 			return true;
 		}
@@ -208,6 +230,7 @@ impl ServerMenu {
 						&& !state.server_invite_pending()
 						&& (state.demo || state.gateway_connected);
 					self.read_item(ui, state, guild);
+					self.read_all_item(ui, state);
 					ui.separator();
 					self.settings_item(ui, state, guild);
 					self.notifications_item(ui, state, guild);

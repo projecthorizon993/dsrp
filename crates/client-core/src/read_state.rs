@@ -30,6 +30,13 @@ pub enum Event {
 		request: u64,
 		result: Result<(), Failure>,
 	},
+	/// Outcome of a bulk acknowledge. Carries which servers were actually written, so a
+	/// partial failure reconciles only the servers that succeeded.
+	AllServersAck {
+		request: u64,
+		acked: Vec<Id>,
+		result: Result<(), Failure>,
+	},
 }
 impl Event {
 	pub fn bytes(&self) -> usize {
@@ -55,6 +62,14 @@ enum Pending {
 	Guild {
 		guild: Id,
 		request: u64,
+		channels: Vec<(Id, u64, Id)>,
+	},
+	/// Every server with unread channels, acknowledged in one action. The account-wide
+	/// counterpart of [`Pending::Guild`]: Discord has no "mark everything" route, so this
+	/// is the same `/guilds/{id}/ack` call issued once per guild.
+	AllServers {
+		request: u64,
+		guilds: Vec<Id>,
 		channels: Vec<(Id, u64, Id)>,
 	},
 }
@@ -101,6 +116,10 @@ impl ReadState {
 				channel: pending, ..
 			}) => *pending == channel,
 			Some(Pending::Guild { channels, .. }) => {
+				channels.retain(|(id, ..)| *id != channel);
+				channels.is_empty()
+			}
+			Some(Pending::AllServers { channels, .. }) => {
 				channels.retain(|(id, ..)| *id != channel);
 				channels.is_empty()
 			}
@@ -522,6 +541,78 @@ impl State {
 			}) if *pending_guild == guild && *pending_request == request
 		)
 	}
+	/// Whether any server holds an unread channel this account may acknowledge.
+	///
+	/// Requires a live session and an idle queue, exactly as a single-server mark does:
+	/// one pending read at a time keeps the acknowledgement and the reconciled local
+	/// cursors from disagreeing.
+	pub fn can_mark_all_servers_read(&self) -> bool {
+		self.auth == AuthState::Authenticated
+			&& self.gateway_connected
+			&& self.read_state.pending.is_none()
+			&& self.channels.iter().any(|channel| {
+				channel
+					.guild
+					.is_some_and(|guild| self.guilds.iter().any(|g| g.id == guild))
+					&& self.unread(channel.id) == Some(true)
+			})
+	}
+	/// Acknowledge every unread server in one action, bounded like the single-server path.
+	///
+	/// Discord exposes no bulk route, so this is one `/guilds/{id}/ack` per server carrying
+	/// unread channels. Guilds are capped at [`crate::MAX_NAV`] and the channel list is
+	/// bounded, so one click cannot queue an unbounded burst of writes.
+	pub fn mark_all_servers_read(&mut self) -> Option<crate::Command> {
+		if !self.can_mark_all_servers_read() {
+			return None;
+		}
+		let mut guilds: Vec<Id> = Vec::new();
+		let mut channels: Vec<(Id, u64, Id)> = Vec::new();
+		for channel in self
+			.channels
+			.iter()
+			.filter(|channel| channel.guild.is_some() && self.unread(channel.id) == Some(true))
+		{
+			let Some(guild) = channel.guild else {
+				continue;
+			};
+			let Some(message) = channel.last_message else {
+				// No last message means no cursor to move; there is nothing to acknowledge.
+				continue;
+			};
+			if !guilds.contains(&guild) {
+				if guilds.len() >= crate::MAX_NAV {
+					break;
+				}
+				guilds.push(guild);
+			}
+			if channels.len() >= crate::MAX_NAV {
+				break;
+			}
+			let epoch = self
+				.read_state
+				.entries
+				.get(&channel.id)
+				.map_or(0, |(_, epoch)| *epoch);
+			channels.push((channel.id, epoch, message));
+		}
+		if guilds.is_empty() || channels.is_empty() {
+			return None;
+		}
+		self.read_state.revision = self.read_state.revision.wrapping_add(1);
+		let request = self.read_state.revision;
+		let queued = guilds.clone();
+		self.read_state.pending = Some(Pending::AllServers {
+			request,
+			guilds,
+			channels,
+		});
+		self.read_state.status = None;
+		Some(crate::Command::MarkAllServersRead {
+			request,
+			guilds: queued,
+		})
+	}
 	fn mark_read_command(
 		&mut self,
 		channel: Id,
@@ -819,6 +910,86 @@ impl State {
 						} else if let Some((channel, ..)) = channels.first() {
 							self.read_state.status = Some((
 								*channel,
+								match failure {
+									Failure::Ambiguous => {
+										"Read status could not be confirmed · unread markers may be out of date"
+									}
+									_ => {
+										"Read status could not sync · unread markers may be out of date"
+									}
+								},
+							));
+						}
+					}
+				}
+			}
+			Event::AllServersAck {
+				request,
+				acked,
+				result,
+			} => {
+				let Some(Pending::AllServers {
+					request: pending_request,
+					guilds,
+					channels,
+				}) = self.read_state.pending.take()
+				else {
+					return Ok(());
+				};
+				if pending_request != request {
+					// A stale reply for a superseded run: restore it and ignore the event.
+					self.read_state.pending = Some(Pending::AllServers {
+						request: pending_request,
+						guilds,
+						channels,
+					});
+					return Ok(());
+				}
+				// Reconcile whatever was written, including a run that stopped part way:
+				// those servers did land, and leaving them unread would claim a write
+				// that succeeded never happened. The `acked` membership test means a run
+				// that wrote nothing reconciles nothing.
+				if !acked.is_empty() {
+					self.read_state.revision = self.read_state.revision.wrapping_add(1);
+					let revision = self.read_state.revision;
+					for (channel, epoch, message) in channels {
+						// Only channels in a server the caller confirmed as written move.
+						let Some(guild) = self.channel(channel).and_then(|c| c.guild) else {
+							continue;
+						};
+						if !acked.contains(&guild) {
+							continue;
+						}
+						if !self.read_state.entries.contains_key(&channel)
+							&& self.read_state.entries.len() >= crate::MAX_NAV
+						{
+							continue;
+						}
+						if self
+							.read_state
+							.entries
+							.get(&channel)
+							.map_or(0, |(_, current)| *current)
+							!= epoch
+						{
+							continue;
+						}
+						self.read_state
+							.activity
+							.ack(channel, Some(message), Some(0));
+						self.read_state
+							.entries
+							.insert(channel, (Some(message), revision));
+					}
+				}
+				match result {
+					Ok(()) => self.read_state.status = None,
+					Err(failure) => {
+						if failure.ends_session() {
+							self.fail(failure);
+						} else {
+							self.read_state.status = Some((
+								self.selected.unwrap_or(Id(0)),
 								match failure {
 									Failure::Ambiguous => {
 										"Read status could not be confirmed · unread markers may be out of date"
@@ -1395,5 +1566,164 @@ mod navigation_tests {
 			assert!(!state.can_load_newer());
 			assert_eq!(state.search_target, Some(Id(50)));
 		}
+	}
+
+	/// A guild-backed unread channel, plus the guild and permission entries the bulk
+	/// path requires: an unread marker a client cannot see is not one it may acknowledge.
+	fn guild_channel(state: &mut State, id: u64, guild: u64) {
+		let mut channel = state.channels[0].clone();
+		channel.id = Id(id);
+		channel.guild = Some(Id(guild));
+		channel.last_message = Some(Id(500 + id));
+		state.channels.push(channel);
+		state.guilds.push(model::Guild {
+			default_message_notifications: None,
+			stickers: None,
+			emojis: None,
+			id: Id(guild),
+			name: format!("Synthetic {guild}"),
+			icon: None,
+		});
+		state.permissions.guilds.insert(
+			Id(guild),
+			model::permissions::Guild {
+				id: Id(guild),
+				// A different owner than the fixture user, so the @everyone path is
+				// exercised rather than the owner's unconditional grant.
+				owner: Some(Id(9999)),
+				roles: Some(vec![model::permissions::Role {
+					id: Id(guild),
+					// @everyone, granted the view bit so the channel resolves as readable.
+					bits: model::permissions::VIEW_CHANNEL,
+					name: "@everyone".into(),
+					color: 0,
+					secondary_color: None,
+					tertiary_color: None,
+					position: 0,
+					hoist: false,
+				}]),
+				member: Some(model::permissions::Member {
+					roles: Vec::new(),
+					timeout_until: None,
+				}),
+			},
+		);
+		state.permissions.channels.insert(
+			Id(id),
+			model::permissions::Channel {
+				id: Id(id),
+				guild: Id(guild),
+				overwrites: Some(Vec::new()),
+			},
+		);
+	}
+
+	/// Mark the listed channels unread. A snapshot replaces the whole cursor table, so
+	/// every channel added by [`guild_channel`] must be seeded in one call.
+	fn mark_unread(state: &mut State, channels: &[u64]) {
+		state
+			.apply_read_state(Event::Snapshot {
+				entries: Some(
+					channels
+						.iter()
+						.map(|id| (Id(*id), None, 0))
+						.collect::<Vec<_>>(),
+				),
+				version: None,
+				partial: false,
+			})
+			.unwrap();
+	}
+
+	#[test]
+	fn mark_all_servers_read_acknowledges_every_unread_server_and_spares_others() {
+		let mut state = state(None);
+		guild_channel(&mut state, 11, 100);
+		guild_channel(&mut state, 12, 200);
+		mark_unread(&mut state, &[11, 12]);
+		let Command::MarkAllServersRead { request, guilds } =
+			state.mark_all_servers_read().unwrap()
+		else {
+			panic!("expected a bulk acknowledgement");
+		};
+		// Both guilds are queued, and the DM never is.
+		assert_eq!(guilds.len(), 2, "both unread servers must be acknowledged");
+		assert!(guilds.contains(&Id(100)) && guilds.contains(&Id(200)));
+		assert!(
+			!state.can_mark_all_servers_read(),
+			"queue is busy while in flight"
+		);
+
+		state
+			.apply_read_state(Event::AllServersAck {
+				request,
+				acked: vec![Id(100), Id(200)],
+				result: Ok(()),
+			})
+			.unwrap();
+		assert_eq!(
+			state.unread(Id(11)),
+			Some(false),
+			"server channel should be read"
+		);
+		assert_eq!(
+			state.unread(Id(12)),
+			Some(false),
+			"every server channel should be read"
+		);
+		assert!(
+			!state.can_mark_all_servers_read(),
+			"nothing left unread, so nothing left to acknowledge"
+		);
+	}
+
+	#[test]
+	fn a_partial_bulk_ack_leaves_the_unwritten_servers_unread() {
+		let mut state = state(None);
+		guild_channel(&mut state, 11, 100);
+		guild_channel(&mut state, 12, 200);
+		mark_unread(&mut state, &[11, 12]);
+		let Command::MarkAllServersRead { request, .. } = state.mark_all_servers_read().unwrap()
+		else {
+			panic!("expected a bulk acknowledgement");
+		};
+		// Only the first server was written before the run stopped.
+		state
+			.apply_read_state(Event::AllServersAck {
+				request,
+				acked: vec![Id(100)],
+				result: Err(Failure::Ambiguous),
+			})
+			.unwrap();
+		assert_eq!(
+			state.unread(Id(11)),
+			Some(false),
+			"the acknowledged server should be read"
+		);
+		assert_eq!(
+			state.unread(Id(12)),
+			Some(true),
+			"a server that was never written must not be marked read"
+		);
+		assert!(
+			state.read_state.status.is_some(),
+			"a partial write must surface a status rather than silently succeed"
+		);
+	}
+
+	#[test]
+	fn mark_all_servers_read_is_refused_when_nothing_is_unread_or_offline() {
+		let mut state = state(None);
+		assert!(
+			state.mark_all_servers_read().is_none(),
+			"nothing unread must not queue a write"
+		);
+		guild_channel(&mut state, 11, 100);
+		mark_unread(&mut state, &[11]);
+		state.gateway_connected = false;
+		assert!(
+			state.mark_all_servers_read().is_none(),
+			"a disconnected client must not claim an acknowledgement"
+		);
 	}
 }

@@ -878,7 +878,7 @@ pub const ALL: &[Plugin] = &[
 		name: "ReadAllNotificationsButton",
 		description: "Read all server notifications with a single button click!",
 		port: Port::Native,
-		note: "A server can be marked read from its context menu",
+		note: "Every server can be marked read at once from any server menu",
 		setting: None,
 	},
 	Plugin {

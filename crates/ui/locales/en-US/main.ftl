@@ -3007,6 +3007,8 @@ server-menu-header-server-menu = Server menu
 server-menu-leave-item-leave-server = Leave server
 # Context: read_item
 server-menu-read-item-mark-as-read = Mark As Read
+# Context: read_all_item
+server-menu-read-all-item-mark-all-servers-read = Mark All Servers Read
 # Context: settings_item
 server-menu-settings-item-server-settings = Server Settings
 # Context: show

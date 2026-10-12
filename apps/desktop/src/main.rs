@@ -6002,13 +6002,13 @@ impl Desktop {
 			ctx.request_repaint();
 		}
 		// The code-block gap is laid out inside markdown rendering.
-		if ui::markdown::fix_codeblock_gap() != self.messaging.fix_codeblock_gap {
-			ui::markdown::set_fix_codeblock_gap(self.messaging.fix_codeblock_gap);
+		if ui::fix_codeblock_gap() != self.messaging.fix_codeblock_gap {
+			ui::set_fix_codeblock_gap(self.messaging.fix_codeblock_gap);
 			ctx.request_repaint();
 		}
 		// The code-block unindent is laid out inside markdown rendering.
-		if ui::markdown::unindent() != self.messaging.unindent {
-			ui::markdown::set_unindent(self.messaging.unindent);
+		if ui::unindent() != self.messaging.unindent {
+			ui::set_unindent(self.messaging.unindent);
 			ctx.request_repaint();
 		}
 	}

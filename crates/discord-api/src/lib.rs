@@ -933,6 +933,14 @@ impl DiscordApi {
 					result,
 				})
 			}
+			Command::MarkAllServersRead { request, guilds } => {
+				let (acked, failure) = self.mark_all_servers_read(&guilds).await;
+				Event::ReadState(client_core::read_state::Event::AllServersAck {
+					request,
+					acked,
+					result: failure.map_or(Ok(()), Err),
+				})
+			}
 			Command::Polls(command) => {
 				use client_core::polls::{Action, Event as E};
 				let channel = command.channel;
@@ -1451,6 +1459,26 @@ impl DiscordApi {
 		self.request_limited(Method::POST, &format!("/guilds/{guild}/ack"), None, 4096)
 			.await
 			.map(|_| ())
+	}
+	/// Acknowledge every supplied server. Discord has no bulk route, so this is the
+	/// per-server call issued in turn.
+	///
+	/// Returns the servers actually written plus the failure that stopped the run, if any.
+	/// A failure part-way through does not roll back what already landed: the caller
+	/// reconciles the acked servers and leaves the rest visibly unread, rather than
+	/// claiming a write that never happened.
+	pub(crate) async fn mark_all_servers_read(
+		&self,
+		guilds: &[model::Id],
+	) -> (Vec<model::Id>, Option<Failure>) {
+		let mut acked = Vec::with_capacity(guilds.len());
+		for guild in guilds {
+			if let Err(failure) = self.mark_guild_read(*guild).await {
+				return (acked, Some(failure));
+			}
+			acked.push(*guild);
+		}
+		(acked, None)
 	}
 }
 impl DiscordApi {

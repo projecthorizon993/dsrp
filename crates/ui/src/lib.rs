@@ -123,7 +123,7 @@ mod timeline;
 /// The reply-preview timestamp flag, re-exported so the desktop can set it without the rest of the
 /// timeline becoming public API.
 pub use timeline::{reply_timestamps, set_reply_timestamps};
-pub mod markdown;
+mod markdown;
 /// The code-block gap flag, re-exported so the desktop can set it without the markdown module
 /// becoming public API.
 pub use markdown::{fix_codeblock_gap, set_fix_codeblock_gap};
@@ -4334,6 +4334,11 @@ impl MessagingUi {
 		}
 		if let Some(guild) = self.server_menu.mark_read_requested.take()
 			&& let Some(command) = state.prepare_mark_guild_read(guild)
+		{
+			commands.push(command);
+		}
+		if std::mem::take(&mut self.server_menu.mark_all_read_requested)
+			&& let Some(command) = state.mark_all_servers_read()
 		{
 			commands.push(command);
 		}
