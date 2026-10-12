@@ -13,7 +13,7 @@ use std::{
 const MAX_FILES: usize = 8192;
 const MAX_UNPACKED: u64 = 1024 * 1024 * 1024;
 const WINDOWS_FILES: &[&str] = &[
-	"serein.exe",
+	"dsrp.exe",
 	"README.md",
 	"LICENSE-MIT",
 	"LICENSE-APACHE",
@@ -73,7 +73,7 @@ pub(super) fn linux_package_manager_update_command() -> Option<&'static str> {
 			|| id_like.contains("fedora")
 			|| id_like.contains("rhel")
 		{
-			return Some("sudo dnf upgrade serein");
+			return Some("sudo dnf upgrade dsrp");
 		}
 		if id == "ubuntu"
 			|| id == "debian"
@@ -82,23 +82,23 @@ pub(super) fn linux_package_manager_update_command() -> Option<&'static str> {
 			|| id_like.contains("debian")
 			|| id_like.contains("ubuntu")
 		{
-			return Some("sudo apt update && sudo apt install --only-upgrade serein");
+			return Some("sudo apt update && sudo apt install --only-upgrade dsrp");
 		}
 		if id == "arch" || id == "manjaro" || id == "endeavouros" || id_like.contains("arch") {
-			return Some("sudo pacman -Syu serein");
+			return Some("sudo pacman -Syu dsrp");
 		}
 		if id.contains("suse") || id_like.contains("suse") {
-			return Some("sudo zypper update serein");
+			return Some("sudo zypper update dsrp");
 		}
 	}
 	if Path::new("/usr/bin/dnf").is_file() {
-		Some("sudo dnf upgrade serein")
+		Some("sudo dnf upgrade dsrp")
 	} else if Path::new("/usr/bin/apt").is_file() {
-		Some("sudo apt update && sudo apt install --only-upgrade serein")
+		Some("sudo apt update && sudo apt install --only-upgrade dsrp")
 	} else if Path::new("/usr/bin/pacman").is_file() {
-		Some("sudo pacman -Syu serein")
+		Some("sudo pacman -Syu dsrp")
 	} else if Path::new("/usr/bin/zypper").is_file() {
-		Some("sudo zypper update serein")
+		Some("sudo zypper update dsrp")
 	} else {
 		None
 	}
@@ -144,12 +144,12 @@ fn installation() -> Result<PathBuf, String> {
 				);
 			}
 			return Err(
-				"Use your package manager to update Serein, or run a release AppImage.".into(),
+				"Use your package manager to update dsrp, or run a release AppImage.".into(),
 			);
 		}
 		let appdir = PathBuf::from(std::env::var_os("APPDIR").ok_or("Missing AppImage mount.")?);
 		if fs::canonicalize(appdir.join("usr/bin/dsrp")).ok().as_ref() != Some(&exe) {
-			return Err("Run Serein from its AppImage to install updates.".into());
+			return Err("Run dsrp from its AppImage to install updates.".into());
 		}
 		let image = PathBuf::from(std::env::var_os("APPIMAGE").ok_or("Missing AppImage path.")?);
 		let image = fs::canonicalize(image).map_err(|_| "Cannot locate the installed AppImage.")?;
@@ -176,7 +176,7 @@ fn installation() -> Result<PathBuf, String> {
 			.and_then(Path::parent)
 			.and_then(Path::parent)
 			.ok_or("Run the installed dsrp.app to install updates.")?;
-		if exe.file_name().is_none_or(|name| name != "serein")
+		if exe.file_name().is_none_or(|name| name != "dsrp")
 			|| exe
 				.parent()
 				.and_then(Path::file_name)
@@ -187,7 +187,7 @@ fn installation() -> Result<PathBuf, String> {
 		}
 		if app.starts_with("/Volumes") || app.to_string_lossy().contains("/AppTranslocation/") {
 			return Err(
-				"Move Serein to Applications or another writable folder before updating.".into(),
+				"Move dsrp to Applications or another writable folder before updating.".into(),
 			);
 		}
 		Ok(app.to_owned())
@@ -195,9 +195,9 @@ fn installation() -> Result<PathBuf, String> {
 		let root = exe
 			.parent()
 			.ok_or("Cannot locate the installed application folder.")?;
-		if exe.file_name().is_none_or(|name| name != "serein.exe") {
+		if exe.file_name().is_none_or(|name| name != "dsrp.exe") {
 			return Err(
-				"Run Serein from an extracted release package to install updates; source builds cannot replace themselves."
+				"Run dsrp from an extracted release package to install updates; source builds cannot replace themselves."
 					.into(),
 			);
 		}
@@ -215,7 +215,7 @@ fn installation() -> Result<PathBuf, String> {
 		}
 		Ok(root.to_owned())
 	} else {
-		Err("Use your package manager to update Serein on Linux.".into())
+		Err("Use your package manager to update dsrp on Linux.".into())
 	}
 }
 
@@ -240,7 +240,7 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 		.open(&lock_path)
 		.map_err(|_| "The installation folder is not writable.".to_owned())?;
 	lock.try_lock()
-		.map_err(|_| "Another Serein instance is preparing update storage.".to_owned())?;
+		.map_err(|_| "Another dsrp instance is preparing update storage.".to_owned())?;
 	// One bounded staging directory per installation; discard leftovers only after their owner exits.
 	let mut count = 0;
 	for entry in
@@ -248,7 +248,10 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 	{
 		count += 1;
 		if count > 16_384 {
-			return Err("The installation folder contains too many entries. Move Serein into its own folder.".into());
+			return Err(
+				"The installation folder contains too many entries. Move dsrp into its own folder."
+					.into(),
+			);
 		}
 		let entry = entry.map_err(|_| "Cannot inspect update storage.".to_owned())?;
 		let name = entry.file_name();
@@ -274,7 +277,7 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 			.is_some_and(process_alive);
 		if helper_alive || (pid != std::process::id() && process_alive(pid)) {
 			return Err(
-				"Another Serein instance is preparing an update. Close it and try again.".into(),
+				"Another dsrp instance is preparing an update. Close it and try again.".into(),
 			);
 		}
 		if fs::read(entry.path().join("owner")).ok().as_deref() != Some(b"serein-updater-v1") {
@@ -311,7 +314,10 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 		use std::os::unix::fs::DirBuilderExt;
 		builder.mode(0o700);
 	}
-	builder.create(&directory).map_err(|_| "The installation folder is not writable. Move Serein to a writable folder and try again.".to_owned())?;
+	builder.create(&directory).map_err(|_| {
+		"The installation folder is not writable. Move dsrp to a writable folder and try again."
+			.to_owned()
+	})?;
 	fs::write(directory.join("owner"), b"serein-updater-v1")
 		.map_err(|_| "Cannot mark update storage ownership.".to_owned())?;
 	Ok(Staged {
@@ -710,11 +716,11 @@ pub(super) fn unpack(
 		}
 	}
 	if cfg!(target_os = "macos") {
-		if !destination.join("dsrp.app/Contents/MacOS/serein").is_file() {
+		if !destination.join("dsrp.app/Contents/MacOS/dsrp").is_file() {
 			return Err("The update does not contain dsrp.app.".into());
 		}
 		verify_mac(&destination.join("dsrp.app"), installed)?;
-	} else if !destination.join("serein.exe").is_file()
+	} else if !destination.join("dsrp.exe").is_file()
 		|| !destination.join("licenses").is_dir()
 		|| !destination.join("THIRD_PARTY_NOTICES.md").is_file()
 	{
@@ -752,7 +758,7 @@ fn verify_mac(candidate: &Path, installed: &Path) -> Result<(), String> {
 			.lines()
 			.find_map(|line| line.strip_prefix("TeamIdentifier="))
 			.filter(|team| team.len() == 10 && team.bytes().all(|b| b.is_ascii_alphanumeric()))
-			.ok_or("In-app installation requires a Developer ID signed release of Serein.")?;
+			.ok_or("In-app installation requires a Developer ID signed release of dsrp.")?;
 		let identifier = text
 			.lines()
 			.find_map(|line| line.strip_prefix("Identifier="))
@@ -762,7 +768,7 @@ fn verify_mac(candidate: &Path, installed: &Path) -> Result<(), String> {
 	let old = identity(installed)?;
 	let new = identity(candidate)?;
 	if old != new || new.1 != "io.github.projecthorizon993.dsrp" {
-		return Err("The update was not signed by this Serein publisher.".into());
+		return Err("The update was not signed by this dsrp publisher.".into());
 	}
 	let status = Command::new("/usr/sbin/spctl")
 		.args(["--assess", "--type", "execute"])
@@ -895,7 +901,7 @@ pub(super) fn prepare_restart(
 		}
 		let _ = child.kill();
 		let _ = child.wait();
-		Err("The update helper did not start. Serein will remain open.".into())
+		Err("The update helper did not start. dsrp will remain open.".into())
 	}
 }
 
@@ -984,11 +990,11 @@ try {
     Move-Item -LiteralPath $source -Destination $target
     $replaced.Add($name)
   }
-  $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Serein'
+  $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\dsrp'
   if ($plan.version -and (Test-Path -LiteralPath $uninstallKey)) {
     Set-ItemProperty -LiteralPath $uninstallKey -Name 'DisplayVersion' -Value ([string]$plan.version) -ErrorAction SilentlyContinue
   }
-  Start-Process -FilePath (Join-Path $installation 'serein.exe') -WorkingDirectory $installation
+  Start-Process -FilePath (Join-Path $installation 'dsrp.exe') -WorkingDirectory $installation
 } catch {
   foreach ($name in $replaced) {
     $target = Join-Path $installation $name
@@ -997,7 +1003,7 @@ try {
   foreach ($name in $moved) {
     Move-Item -LiteralPath (Join-Path $backup $name) -Destination (Join-Path $installation $name) -ErrorAction SilentlyContinue
   }
-  Start-Process -FilePath (Join-Path $installation 'serein.exe') -WorkingDirectory $installation -ErrorAction SilentlyContinue
+  Start-Process -FilePath (Join-Path $installation 'dsrp.exe') -WorkingDirectory $installation -ErrorAction SilentlyContinue
   exit 1
 }
 try {
@@ -1050,13 +1056,13 @@ pub(super) fn debug_check() -> Result<(), String> {
 			return Err(format!("Archive path validation accepted {path}"));
 		}
 	}
-	if safe_path("dsrp.app/Contents/MacOS/serein").is_err() {
+	if safe_path("dsrp.app/Contents/MacOS/dsrp").is_err() {
 		return Err("Valid archive path rejected.".into());
 	}
 	let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
 	writer
 		.start_file(
-			"dsrp.app/Contents/MacOS/serein",
+			"dsrp.app/Contents/MacOS/dsrp",
 			zip::write::SimpleFileOptions::default(),
 		)
 		.map_err(|_| "Cannot create synthetic ZIP.")?;
