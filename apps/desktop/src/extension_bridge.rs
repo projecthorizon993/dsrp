@@ -547,7 +547,7 @@ impl Bridge {
 			.map(|u| u.id.0.to_string());
 		if self.host.is_none() {
 			let root = if demo {
-				Some(std::env::temp_dir().join("serein-extension-demo"))
+				Some(std::env::temp_dir().join("dsrp-extension-demo"))
 			} else {
 				local_store::data_dir()
 					.ok()

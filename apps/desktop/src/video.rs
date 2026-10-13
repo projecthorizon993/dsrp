@@ -135,7 +135,7 @@ impl Video {
 			let runtime = runtime.clone();
 			let ctx = ctx.clone();
 			std::thread::Builder::new()
-				.name("serein-attachment-video".into())
+				.name("dsrp-attachment-video".into())
 				.spawn(move || {
 					while runtime.block_on(receiver.changed()).is_ok() {
 						let Some(request) = receiver.borrow_and_update().clone() else {
@@ -156,7 +156,7 @@ impl Video {
 		}
 		let requests = self.requests.as_ref().expect("worker created");
 		if requests.is_closed() {
-			return Err("Video worker stopped; restart Serein");
+			return Err("Video worker stopped; restart dsrp");
 		}
 		let session = Arc::new(Session::new(volume));
 		requests.send_replace(Some(Request {
