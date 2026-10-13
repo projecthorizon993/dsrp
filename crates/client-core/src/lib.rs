@@ -65,6 +65,12 @@ pub const NITRO_FULL: u8 = 2;
 pub const MAX_ATTACHMENTS: usize = 10;
 pub const MAX_NAV: usize = model::account::MAX_ENTRIES;
 const MAX_VIEWED_SERVERS: usize = 1024;
+/// Servers one "mark all read" run may acknowledge. Discord exposes no bulk route,
+/// so this is one write per server; `MAX_NAV` is a navigation cap and far too large
+/// to bound a burst of REST writes.
+pub const MAX_ACKNOWLEDGED_SERVERS: usize = 1024;
+/// Channels one "mark all read" run may touch. Bounds the reconciled entry writes.
+pub const MAX_ACKNOWLEDGED_CHANNELS: usize = 4096;
 pub const MAX_MEMBER_PRESENCE_BYTES: usize = 128 * 1024;
 pub const MAX_EVENT_BYTES: usize = 4 * 1024 * 1024;
 pub const EVENT_SLOTS: usize = 8; // UI drain batch; reliable events share a 32 MiB byte budget.

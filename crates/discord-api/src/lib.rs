@@ -46,6 +46,9 @@ use std::{
 	},
 	time::Duration,
 };
+
+/// Pause inserted between the per-server writes of one "mark all read" run.
+const ACK_PACE: Duration = Duration::from_millis(150);
 use tokio::{
 	sync::{Mutex, Semaphore},
 	time::{Instant, sleep_until},
@@ -1472,7 +1475,13 @@ impl DiscordApi {
 		guilds: &[model::Id],
 	) -> (Vec<model::Id>, Option<Failure>) {
 		let mut acked = Vec::with_capacity(guilds.len());
-		for guild in guilds {
+		for (index, guild) in guilds.iter().enumerate() {
+			// Discord has no bulk ack route, so this runs one request per server. Pace the
+			// run so a large account cannot trip the global rate limit, which would stall
+			// every other REST request behind the shared cooldown.
+			if index > 0 {
+				tokio::time::sleep(ACK_PACE).await;
+			}
 			if let Err(failure) = self.mark_guild_read(*guild).await {
 				return (acked, Some(failure));
 			}

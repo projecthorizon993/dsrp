@@ -3,7 +3,7 @@ use crate::{
 	auth::{AuthState, Failure},
 };
 use model::{Freshness, Id, Patch};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub enum Event {
 	Snapshot {
@@ -560,13 +560,15 @@ impl State {
 	/// Acknowledge every unread server in one action, bounded like the single-server path.
 	///
 	/// Discord exposes no bulk route, so this is one `/guilds/{id}/ack` per server carrying
-	/// unread channels. Guilds are capped at [`crate::MAX_NAV`] and the channel list is
-	/// bounded, so one click cannot queue an unbounded burst of writes.
+	/// unread channels. Guilds are capped at [`crate::MAX_ACKNOWLEDGED_SERVERS`] and the
+	/// channel list at [`crate::MAX_ACKNOWLEDGED_CHANNELS`], so one click cannot queue an
+	/// unbounded burst of writes that would starve other REST traffic.
 	pub fn mark_all_servers_read(&mut self) -> Option<crate::Command> {
 		if !self.can_mark_all_servers_read() {
 			return None;
 		}
 		let mut guilds: Vec<Id> = Vec::new();
+		let mut seen: BTreeSet<Id> = BTreeSet::new();
 		let mut channels: Vec<(Id, u64, Id)> = Vec::new();
 		for channel in self
 			.channels
@@ -580,13 +582,13 @@ impl State {
 				// No last message means no cursor to move; there is nothing to acknowledge.
 				continue;
 			};
-			if !guilds.contains(&guild) {
-				if guilds.len() >= crate::MAX_NAV {
+			if seen.insert(guild) {
+				if guilds.len() >= crate::MAX_ACKNOWLEDGED_SERVERS {
 					break;
 				}
 				guilds.push(guild);
 			}
-			if channels.len() >= crate::MAX_NAV {
+			if channels.len() >= crate::MAX_ACKNOWLEDGED_CHANNELS {
 				break;
 			}
 			let epoch = self
@@ -1708,6 +1710,56 @@ mod navigation_tests {
 		assert!(
 			state.read_state.status.is_some(),
 			"a partial write must surface a status rather than silently succeed"
+		);
+	}
+
+	#[test]
+	fn mark_all_servers_read_caps_the_queued_write_burst() {
+		let mut state = state(None);
+		// More unread servers than one run may write. Each server carries one unread channel.
+		let servers = crate::MAX_ACKNOWLEDGED_SERVERS + 64;
+		for server in 0..servers as u64 {
+			guild_channel(&mut state, 1000 + server, 9000 + server);
+		}
+		mark_unread(
+			&mut state,
+			&(0..servers as u64).map(|s| 1000 + s).collect::<Vec<_>>(),
+		);
+		let Command::MarkAllServersRead { guilds, .. } = state.mark_all_servers_read().unwrap()
+		else {
+			panic!("expected a bulk acknowledgement");
+		};
+		assert_eq!(
+			guilds.len(),
+			crate::MAX_ACKNOWLEDGED_SERVERS,
+			"a run must never queue more writes than the cap allows"
+		);
+		assert!(
+			guilds.len() < crate::MAX_NAV,
+			"the cap must be a write bound, not the navigation-entry bound"
+		);
+	}
+
+	#[test]
+	fn mark_all_servers_read_does_not_repeat_a_server_with_many_unread_channels() {
+		let mut state = state(None);
+		// One server, many unread channels: the server must be acknowledged exactly once.
+		let channels = 256u64;
+		for channel in 0..channels {
+			guild_channel(&mut state, 500 + channel, 700);
+		}
+		mark_unread(
+			&mut state,
+			&(0..channels).map(|c| 500 + c).collect::<Vec<_>>(),
+		);
+		let Command::MarkAllServersRead { guilds, .. } = state.mark_all_servers_read().unwrap()
+		else {
+			panic!("expected a bulk acknowledgement");
+		};
+		assert_eq!(
+			guilds,
+			vec![Id(700)],
+			"one request per server, regardless of how many channels are unread"
 		);
 	}
 
