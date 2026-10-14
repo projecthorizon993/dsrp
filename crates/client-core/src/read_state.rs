@@ -34,7 +34,6 @@ pub enum Event {
 	/// partial failure reconciles only the servers that succeeded.
 	AllServersAck {
 		request: u64,
-		acked: Vec<Id>,
 		result: Result<(), Failure>,
 	},
 }
@@ -69,8 +68,8 @@ enum Pending {
 	/// is the same `/guilds/{id}/ack` call issued once per guild.
 	AllServers {
 		request: u64,
-		guilds: Vec<Id>,
-		channels: Vec<(Id, u64, Id)>,
+		/// Channel and the message to acknowledge it to, as the bulk endpoint takes.
+		channels: Vec<(Id, Id)>,
 	},
 }
 
@@ -563,13 +562,18 @@ impl State {
 	/// unread channels. Guilds are capped at [`crate::MAX_ACKNOWLEDGED_SERVERS`] and the
 	/// channel list at [`crate::MAX_ACKNOWLEDGED_CHANNELS`], so one click cannot queue an
 	/// unbounded burst of writes that would starve other REST traffic.
+	/// Acknowledge every unread server in one action.
+	///
+	/// Discord's per-server `/guilds/{id}/ack` is deprecated and, one request per
+	/// server, trips the global rate limit on any real account. The client instead
+	/// sends one `POST /read-states/ack-bulk` carrying every unread channel, so the
+	/// whole action is a single write regardless of how many servers are involved.
 	pub fn mark_all_servers_read(&mut self) -> Option<crate::Command> {
 		if !self.can_mark_all_servers_read() {
 			return None;
 		}
-		let mut guilds: Vec<Id> = Vec::new();
+		let mut acks: Vec<(Id, Id)> = Vec::new();
 		let mut seen: BTreeSet<Id> = BTreeSet::new();
-		let mut channels: Vec<(Id, u64, Id)> = Vec::new();
 		for channel in self
 			.channels
 			.iter()
@@ -578,52 +582,42 @@ impl State {
 			let Some(guild) = channel.guild else {
 				continue;
 			};
+			if !self.guilds.iter().any(|g| g.id == guild) {
+				continue;
+			}
 			let Some(message) = channel.last_message else {
 				// No last message means no cursor to move; there is nothing to acknowledge.
 				continue;
 			};
-			if seen.insert(guild) {
-				if guilds.len() >= crate::MAX_ACKNOWLEDGED_SERVERS {
-					break;
-				}
-				guilds.push(guild);
+			// The bulk endpoint ignores a zero message id, and a channel is acknowledged
+			// once however many of its messages are unread.
+			if message.0 == 0 || !seen.insert(channel.id) {
+				continue;
 			}
-			if channels.len() >= crate::MAX_ACKNOWLEDGED_CHANNELS {
+			if acks.len() >= crate::MAX_ACKNOWLEDGED_CHANNELS {
 				break;
 			}
-			let epoch = self
-				.read_state
-				.entries
-				.get(&channel.id)
-				.map_or(0, |(_, epoch)| *epoch);
-			channels.push((channel.id, epoch, message));
+			acks.push((channel.id, message));
 		}
-		if guilds.is_empty() || channels.is_empty() {
+		if acks.is_empty() {
 			return None;
 		}
-		// Clear the visible notification surface now, not when the run finishes. Discord
-		// has no bulk acknowledge route, so the writes are paced and a large account can
-		// take minutes; the reader asked for these to read, so the badges go immediately.
-		// Only the notifications move here. The read cursors stay pending so a partial
-		// failure still reconciles to what was actually written.
-		for (channel, _, message) in &channels {
+		// Clear the visible notification surface now. The write is a single request, so
+		// the badges are already reconciled when the reply lands, but doing it here keeps
+		// the click instant rather than waiting on a round trip.
+		for (channel, message) in &acks {
 			self.read_state
 				.activity
 				.ack(*channel, Some(*message), Some(0));
 		}
 		self.read_state.revision = self.read_state.revision.wrapping_add(1);
 		let request = self.read_state.revision;
-		let queued = guilds.clone();
 		self.read_state.pending = Some(Pending::AllServers {
 			request,
-			guilds,
-			channels,
+			channels: acks.clone(),
 		});
 		self.read_state.status = None;
-		Some(crate::Command::MarkAllServersRead {
-			request,
-			guilds: queued,
-		})
+		Some(crate::Command::MarkAllServersRead { request, acks })
 	}
 	fn mark_read_command(
 		&mut self,
@@ -935,14 +929,9 @@ impl State {
 					}
 				}
 			}
-			Event::AllServersAck {
-				request,
-				acked,
-				result,
-			} => {
+			Event::AllServersAck { request, result } => {
 				let Some(Pending::AllServers {
 					request: pending_request,
-					guilds,
 					channels,
 				}) = self.read_state.pending.take()
 				else {
@@ -952,43 +941,22 @@ impl State {
 					// A stale reply for a superseded run: restore it and ignore the event.
 					self.read_state.pending = Some(Pending::AllServers {
 						request: pending_request,
-						guilds,
 						channels,
 					});
 					return Ok(());
 				}
-				// Reconcile whatever was written, including a run that stopped part way:
-				// those servers did land, and leaving them unread would claim a write
-				// that succeeded never happened. The `acked` membership test means a run
-				// that wrote nothing reconciles nothing.
-				if !acked.is_empty() {
+				// The bulk write is all-or-nothing, so a successful reply confirms every
+				// channel it carried. A failure confirms none, and leaving them unread is
+				// the honest outcome: the service never accepted those cursors.
+				if result.is_ok() && !channels.is_empty() {
 					self.read_state.revision = self.read_state.revision.wrapping_add(1);
 					let revision = self.read_state.revision;
-					for (channel, epoch, message) in channels {
-						// Only channels in a server the caller confirmed as written move.
-						let Some(guild) = self.channel(channel).and_then(|c| c.guild) else {
-							continue;
-						};
-						if !acked.contains(&guild) {
-							continue;
-						}
+					for (channel, message) in channels {
 						if !self.read_state.entries.contains_key(&channel)
 							&& self.read_state.entries.len() >= crate::MAX_NAV
 						{
 							continue;
 						}
-						if self
-							.read_state
-							.entries
-							.get(&channel)
-							.map_or(0, |(_, current)| *current)
-							!= epoch
-						{
-							continue;
-						}
-						self.read_state
-							.activity
-							.ack(channel, Some(message), Some(0));
 						self.read_state
 							.entries
 							.insert(channel, (Some(message), revision));
@@ -1655,14 +1623,15 @@ mod navigation_tests {
 		guild_channel(&mut state, 11, 100);
 		guild_channel(&mut state, 12, 200);
 		mark_unread(&mut state, &[11, 12]);
-		let Command::MarkAllServersRead { request, guilds } =
-			state.mark_all_servers_read().unwrap()
+		let Command::MarkAllServersRead { request, acks } = state.mark_all_servers_read().unwrap()
 		else {
 			panic!("expected a bulk acknowledgement");
 		};
-		// Both guilds are queued, and the DM never is.
-		assert_eq!(guilds.len(), 2, "both unread servers must be acknowledged");
-		assert!(guilds.contains(&Id(100)) && guilds.contains(&Id(200)));
+		// Every unread channel is carried, and the DM never is.
+		assert_eq!(acks.len(), 2, "both unread channels must be acknowledged");
+		assert!(acks.iter().any(|(channel, _)| *channel == Id(11)));
+		assert!(acks.iter().any(|(channel, _)| *channel == Id(12)));
+		assert!(acks.iter().all(|(_, message)| message.0 > 0));
 		assert!(
 			!state.can_mark_all_servers_read(),
 			"queue is busy while in flight"
@@ -1671,7 +1640,6 @@ mod navigation_tests {
 		state
 			.apply_read_state(Event::AllServersAck {
 				request,
-				acked: vec![Id(100), Id(200)],
 				result: Ok(()),
 			})
 			.unwrap();
@@ -1692,7 +1660,7 @@ mod navigation_tests {
 	}
 
 	#[test]
-	fn a_partial_bulk_ack_leaves_the_unwritten_servers_unread() {
+	fn a_failed_bulk_ack_leaves_every_channel_unread() {
 		let mut state = state(None);
 		guild_channel(&mut state, 11, 100);
 		guild_channel(&mut state, 12, 200);
@@ -1701,35 +1669,35 @@ mod navigation_tests {
 		else {
 			panic!("expected a bulk acknowledgement");
 		};
-		// Only the first server was written before the run stopped.
+		// One request carries every channel, so a failure confirms none of them. Claiming
+		// otherwise would mark channels read that the service never accepted.
 		state
 			.apply_read_state(Event::AllServersAck {
 				request,
-				acked: vec![Id(100)],
 				result: Err(Failure::Ambiguous),
 			})
 			.unwrap();
 		assert_eq!(
 			state.unread(Id(11)),
-			Some(false),
-			"the acknowledged server should be read"
+			Some(true),
+			"a channel in a failed bulk write must not be marked read"
 		);
 		assert_eq!(
 			state.unread(Id(12)),
 			Some(true),
-			"a server that was never written must not be marked read"
+			"every channel in a failed bulk write must stay unread"
 		);
 		assert!(
 			state.read_state.status.is_some(),
-			"a partial write must surface a status rather than silently succeed"
+			"a failed write must surface a status rather than silently succeed"
 		);
 	}
 
 	#[test]
-	fn a_bulk_ack_never_ends_the_session_however_badly_one_server_fails() {
-		// A per-server failure inside a bulk run used to call `self.fail`, which drops the
-		// gateway. Reconnecting replays the run and fails on the same server, so one
-		// unwritable server became a permanent reconnect loop. A bulk run must survive.
+	fn a_bulk_ack_never_ends_the_session_however_it_fails() {
+		// A failure inside a bulk run used to call `self.fail`, which drops the gateway.
+		// Reconnecting replays the run and fails the same way, so one bad write became a
+		// permanent reconnect loop. A bulk run must survive any failure.
 		for failure in [
 			Failure::Ambiguous,
 			Failure::Capacity,
@@ -1748,7 +1716,6 @@ mod navigation_tests {
 			state
 				.apply_read_state(Event::AllServersAck {
 					request,
-					acked: vec![Id(100)],
 					result: Err(failure),
 				})
 				.unwrap();
@@ -1771,34 +1738,42 @@ mod navigation_tests {
 	#[test]
 	fn mark_all_servers_read_caps_the_queued_write_burst() {
 		let mut state = state(None);
-		// More unread servers than one run may write. Each server carries one unread channel.
-		let servers = crate::MAX_ACKNOWLEDGED_SERVERS + 64;
-		for server in 0..servers as u64 {
-			guild_channel(&mut state, 1000 + server, 9000 + server);
+		// More unread channels than one bulk body may carry.
+		let channels = crate::MAX_ACKNOWLEDGED_CHANNELS + 64;
+		for channel in 0..channels as u64 {
+			guild_channel(&mut state, 1000 + channel, 9000 + channel);
 		}
 		mark_unread(
 			&mut state,
-			&(0..servers as u64).map(|s| 1000 + s).collect::<Vec<_>>(),
+			&(0..channels as u64).map(|c| 1000 + c).collect::<Vec<_>>(),
 		);
-		let Command::MarkAllServersRead { guilds, .. } = state.mark_all_servers_read().unwrap()
+		let Command::MarkAllServersRead { acks, .. } = state.mark_all_servers_read().unwrap()
 		else {
 			panic!("expected a bulk acknowledgement");
 		};
 		assert_eq!(
-			guilds.len(),
-			crate::MAX_ACKNOWLEDGED_SERVERS,
-			"a run must never queue more writes than the cap allows"
+			acks.len(),
+			crate::MAX_ACKNOWLEDGED_CHANNELS,
+			"a run must never carry more channels than the cap allows"
 		);
 		assert!(
-			guilds.len() < crate::MAX_NAV,
+			acks.len() < crate::MAX_NAV,
 			"the cap must be a write bound, not the navigation-entry bound"
+		);
+		// The body must never repeat a channel, or the service would apply it twice.
+		let unique: BTreeSet<Id> = acks.iter().map(|(channel, _)| *channel).collect();
+		assert_eq!(
+			unique.len(),
+			acks.len(),
+			"a channel is carried at most once"
 		);
 	}
 
 	#[test]
-	fn mark_all_servers_read_does_not_repeat_a_server_with_many_unread_channels() {
+	fn mark_all_servers_read_carries_every_unread_channel_in_one_body() {
 		let mut state = state(None);
-		// One server, many unread channels: the server must be acknowledged exactly once.
+		// One server with many unread channels: the bulk body carries each channel once,
+		// and the whole action is a single request rather than one per channel.
 		let channels = 256u64;
 		for channel in 0..channels {
 			guild_channel(&mut state, 500 + channel, 700);
@@ -1807,15 +1782,33 @@ mod navigation_tests {
 			&mut state,
 			&(0..channels).map(|c| 500 + c).collect::<Vec<_>>(),
 		);
-		let Command::MarkAllServersRead { guilds, .. } = state.mark_all_servers_read().unwrap()
+		let Command::MarkAllServersRead { request, acks } = state.mark_all_servers_read().unwrap()
 		else {
 			panic!("expected a bulk acknowledgement");
 		};
 		assert_eq!(
-			guilds,
-			vec![Id(700)],
-			"one request per server, regardless of how many channels are unread"
+			acks.len(),
+			channels as usize,
+			"every unread channel is carried in the one request"
 		);
+		// The bulk endpoint ignores a zero message id, so none may be sent.
+		assert!(
+			acks.iter().all(|(_, message)| message.0 > 0),
+			"a zero message id would be silently ignored by the bulk endpoint"
+		);
+		state
+			.apply_read_state(Event::AllServersAck {
+				request,
+				result: Ok(()),
+			})
+			.unwrap();
+		for channel in 0..channels {
+			assert_eq!(
+				state.unread(Id(500 + channel)),
+				Some(false),
+				"an accepted bulk write marks every carried channel read"
+			);
+		}
 	}
 
 	#[test]

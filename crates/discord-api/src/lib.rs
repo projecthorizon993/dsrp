@@ -47,51 +47,8 @@ use std::{
 	time::Duration,
 };
 
-/// Pause inserted between the per-server writes of one "mark all read" run.
-///
-/// Discord exposes no bulk acknowledge route, so the run is one request per server. A
-/// tight burst trips the global rate limit, which stalls every other REST request
-/// behind the shared cooldown and drops the session. Pacing well inside the limit
-/// trades a slow, quiet run for one that never floods the API.
-const ACK_PACE_MIN: Duration = Duration::from_millis(3_000);
-const ACK_PACE_MAX: Duration = Duration::from_millis(6_000);
-/// How many times one server may be retried after the API asks us to wait.
-/// The wait itself is honoured; this only bounds a run that cannot make progress.
-const ACK_RATE_LIMIT_RETRIES: usize = 2;
-
-/// Jittered pause between the per-server writes of one "mark all read" run.
-///
-/// Spacing the writes at a fixed interval makes the run look mechanical to the API and
-/// to any intermediary that watches request timing. A per-run random seed spreads the
-/// pauses instead, so the run stays inside the limit without a fixed cadence.
-struct Pacing {
-	state: u64,
-}
-
-impl Pacing {
-	fn new() -> Self {
-		// Seeded per run from the clock; each bulk acknowledgement is a separate call.
-		let seed = std::time::SystemTime::now()
-			.duration_since(std::time::UNIX_EPOCH)
-			.map_or(0x9E37_79B9_7F4A_7C15, |d| d.as_nanos() as u64)
-			| 1;
-		Self { state: seed }
-	}
-	/// xorshift64*: a small, dependency-free generator for the pause spread.
-	fn next(&mut self) -> u64 {
-		let mut x = self.state;
-		x ^= x >> 12;
-		x ^= x << 25;
-		x ^= x >> 27;
-		self.state = x;
-		x.wrapping_mul(0x2545_F491_4F6C_DD1D)
-	}
-	async fn wait(&mut self) {
-		let span = (ACK_PACE_MAX - ACK_PACE_MIN).as_millis() as u64;
-		let extra = if span == 0 { 0 } else { self.next() % span };
-		tokio::time::sleep(ACK_PACE_MIN + Duration::from_millis(extra)).await;
-	}
-}
+/// `CHANNEL` read state type, the default for `POST /read-states/ack-bulk`.
+const READ_STATE_CHANNEL: u8 = 0;
 use tokio::{
 	sync::{Mutex, Semaphore},
 	time::{Instant, sleep_until},
@@ -988,13 +945,9 @@ impl DiscordApi {
 					result,
 				})
 			}
-			Command::MarkAllServersRead { request, guilds } => {
-				let (acked, failure) = self.mark_all_servers_read(&guilds).await;
-				Event::ReadState(client_core::read_state::Event::AllServersAck {
-					request,
-					acked,
-					result: failure.map_or(Ok(()), Err),
-				})
+			Command::MarkAllServersRead { request, acks } => {
+				let result = self.mark_all_servers_read(&acks).await;
+				Event::ReadState(client_core::read_state::Event::AllServersAck { request, result })
 			}
 			Command::Polls(command) => {
 				use client_core::polls::{Action, Event as E};
@@ -1527,58 +1480,49 @@ impl DiscordApi {
 	/// A failure part-way through does not roll back what already landed: the caller
 	/// reconciles the acked servers and leaves the rest visibly unread, rather than
 	/// claiming a write that never happened.
+	/// Acknowledge every supplied channel in one write.
+	///
+	/// Discord's per-server `/guilds/{id}/ack` is deprecated, and issuing one request
+	/// per server trips the global rate limit on any real account: a 63-server account
+	/// was cut off after 15 requests with a 600 second cooldown. `POST
+	/// /read-states/ack-bulk` is the replacement it points at, and carries every
+	/// channel in a single request, so the action no longer scales with server count.
+	///
+	/// The write is all-or-nothing: a successful 204 confirms every channel carried.
 	pub(crate) async fn mark_all_servers_read(
 		&self,
-		guilds: &[model::Id],
-	) -> (Vec<model::Id>, Option<Failure>) {
-		let mut acked = Vec::with_capacity(guilds.len());
-		let mut pacing = Pacing::new();
-		client_core::runlog::record(
-			"read",
-			&format!("mark all read starting for {} servers", guilds.len()),
-		);
-		for guild in guilds {
-			pacing.wait().await;
-			// A rate limit is not this server's fault and says nothing about the next
-			// one. Aborting the run on the first 429 left most servers unacknowledged
-			// after a handful of writes, so wait out the limit the API asked for and
-			// retry this server. Any other failure still stops the run, because that
-			// describes the session rather than a temporary limit.
-			let mut attempt = 0;
-			loop {
-				match self.mark_guild_read(*guild).await {
-					Ok(()) => break,
-					Err(Failure::RateLimited) if attempt < ACK_RATE_LIMIT_RETRIES => {
-						attempt += 1;
-						let wait = *self.cooldown.lock().await;
-						let delay = wait.saturating_duration_since(Instant::now());
-						client_core::runlog::record(
-							"read",
-							&format!("rate limited; waiting {delay:?} before retrying one server"),
-						);
-						// The cooldown already holds the delay the service asked for, so
-						// waiting for it rather than guessing a duration of our own.
-						sleep_until(wait).await;
-					}
-					Err(failure) => {
-						client_core::runlog::record(
-							"read",
-							&format!(
-								"mark all read stopped after {} servers: {failure:?}",
-								acked.len()
-							),
-						);
-						return (acked, Some(failure));
-					}
-				}
-			}
-			acked.push(*guild);
+		acks: &[(model::Id, model::Id)],
+	) -> Result<(), Failure> {
+		if acks.is_empty() {
+			return Ok(());
 		}
 		client_core::runlog::record(
 			"read",
-			&format!("mark all read finished for {} servers", acked.len()),
+			&format!(
+				"mark all read: one bulk request for {} channels",
+				acks.len()
+			),
 		);
-		(acked, None)
+		let read_states: Vec<serde_json::Value> = acks
+			.iter()
+			.map(|(channel, message)| {
+				serde_json::json!({
+					"read_state_type": READ_STATE_CHANNEL,
+					"channel_id": channel.0.to_string(),
+					"message_id": message.0.to_string(),
+				})
+			})
+			.collect();
+		let body = serde_json::json!({ "read_states": read_states });
+		// A bulk acknowledgement returns 204 with no body, so the cap only has to
+		// admit the request's own response, not a payload.
+		self.request_limited(Method::POST, "/read-states/ack-bulk", Some(body), MAX_WIRE)
+			.await?;
+		client_core::runlog::record(
+			"read",
+			&format!("mark all read accepted for {} channels", acks.len()),
+		);
+		Ok(())
 	}
 }
 impl DiscordApi {

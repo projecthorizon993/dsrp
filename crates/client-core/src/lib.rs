@@ -225,7 +225,8 @@ pub enum Command {
 	/// Acknowledge every server holding unread channels in one action.
 	MarkAllServersRead {
 		request: u64,
-		guilds: Vec<Id>,
+		/// Channel and message to acknowledge, as `POST /read-states/ack-bulk` takes them.
+		acks: Vec<(Id, Id)>,
 	},
 	Reactions(reactions::Command),
 	Profile {
@@ -2208,7 +2209,6 @@ impl State {
 		if let Command::MarkAllServersRead { request, .. } = command {
 			let _ = self.apply_read_state(read_state::Event::AllServersAck {
 				request,
-				acked: Vec::new(),
 				result: Err(auth::Failure::RateLimited),
 			});
 			return;
