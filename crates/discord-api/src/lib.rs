@@ -53,8 +53,11 @@ use std::{
 /// tight burst trips the global rate limit, which stalls every other REST request
 /// behind the shared cooldown and drops the session. Pacing well inside the limit
 /// trades a slow, quiet run for one that never floods the API.
-const ACK_PACE_MIN: Duration = Duration::from_millis(1_000);
-const ACK_PACE_MAX: Duration = Duration::from_millis(3_000);
+const ACK_PACE_MIN: Duration = Duration::from_millis(3_000);
+const ACK_PACE_MAX: Duration = Duration::from_millis(6_000);
+/// How many times one server may be retried after the API asks us to wait.
+/// The wait itself is honoured; this only bounds a run that cannot make progress.
+const ACK_RATE_LIMIT_RETRIES: usize = 2;
 
 /// Jittered pause between the per-server writes of one "mark all read" run.
 ///
@@ -1536,15 +1539,38 @@ impl DiscordApi {
 		);
 		for guild in guilds {
 			pacing.wait().await;
-			if let Err(failure) = self.mark_guild_read(*guild).await {
-				client_core::runlog::record(
-					"read",
-					&format!(
-						"mark all read stopped after {} servers: {failure:?}",
-						acked.len()
-					),
-				);
-				return (acked, Some(failure));
+			// A rate limit is not this server's fault and says nothing about the next
+			// one. Aborting the run on the first 429 left most servers unacknowledged
+			// after a handful of writes, so wait out the limit the API asked for and
+			// retry this server. Any other failure still stops the run, because that
+			// describes the session rather than a temporary limit.
+			let mut attempt = 0;
+			loop {
+				match self.mark_guild_read(*guild).await {
+					Ok(()) => break,
+					Err(Failure::RateLimited) if attempt < ACK_RATE_LIMIT_RETRIES => {
+						attempt += 1;
+						let wait = *self.cooldown.lock().await;
+						let delay = wait.saturating_duration_since(Instant::now());
+						client_core::runlog::record(
+							"read",
+							&format!("rate limited; waiting {delay:?} before retrying one server"),
+						);
+						// The cooldown already holds the delay the service asked for, so
+						// waiting for it rather than guessing a duration of our own.
+						sleep_until(wait).await;
+					}
+					Err(failure) => {
+						client_core::runlog::record(
+							"read",
+							&format!(
+								"mark all read stopped after {} servers: {failure:?}",
+								acked.len()
+							),
+						);
+						return (acked, Some(failure));
+					}
+				}
 			}
 			acked.push(*guild);
 		}
