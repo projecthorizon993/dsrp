@@ -295,6 +295,7 @@ impl DiscordApi {
 		Ok(client)
 	}
 	pub fn stop(&self) {
+		client_core::runlog::record("rest", "client stopped; later requests fail as Expired");
 		self.stopped.store(true, Ordering::Release);
 	}
 	pub fn stopped(&self) -> bool {
@@ -521,8 +522,16 @@ impl DiscordApi {
 			}
 			if status == StatusCode::TOO_MANY_REQUESTS {
 				let mut next = self.cooldown.lock().await;
-				*next =
+				let until =
 					(*next).max(Instant::now() + safe_delay(error.retry_after.or(retry_header))?);
+				*next = until;
+				client_core::runlog::record(
+					"rest",
+					&format!(
+						"429 rate limited on {path}; cooldown for {:?}",
+						until.duration_since(Instant::now())
+					),
+				);
 				return Err(Failure::RateLimited);
 			}
 			// A missing private note is empty, not a missing user profile. No other 404 is converted.
@@ -1516,13 +1525,28 @@ impl DiscordApi {
 	) -> (Vec<model::Id>, Option<Failure>) {
 		let mut acked = Vec::with_capacity(guilds.len());
 		let mut pacing = Pacing::new();
+		client_core::runlog::record(
+			"read",
+			&format!("mark all read starting for {} servers", guilds.len()),
+		);
 		for guild in guilds {
 			pacing.wait().await;
 			if let Err(failure) = self.mark_guild_read(*guild).await {
+				client_core::runlog::record(
+					"read",
+					&format!(
+						"mark all read stopped after {} servers: {failure:?}",
+						acked.len()
+					),
+				);
 				return (acked, Some(failure));
 			}
 			acked.push(*guild);
 		}
+		client_core::runlog::record(
+			"read",
+			&format!("mark all read finished for {} servers", acked.len()),
+		);
 		(acked, None)
 	}
 }

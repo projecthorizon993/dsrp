@@ -77,6 +77,10 @@ const SIGN_IN_HEADER_HEIGHT: f32 = if cfg!(target_os = "windows") {
 
 /// Run explicit offline checks before native startup, or launch the configured desktop client.
 fn main() -> eframe::Result {
+	// Diagnostics go next to the rest of the client's state. Gateway close codes and
+	// session-ending failures are invisible in the UI but decide whether the client
+	// reconnects, so they need to survive a crash or a user report.
+	client_core::runlog::use_directory(local_store::data_dir().ok());
 	#[cfg(all(debug_assertions, feature = "demo"))]
 	if std::env::args().any(|arg| arg == "--demo")
 		&& std::env::args().any(|arg| arg == "--demo-check-pr565")

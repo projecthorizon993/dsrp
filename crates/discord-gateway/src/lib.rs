@@ -153,6 +153,13 @@ impl ResumeState {
 		}
 	}
 	fn close(&mut self, code: u16) -> Result<(), Failure> {
+		// Every disconnect funnels through here, and the code decides the reconnect
+		// action. The UI shows only "reconnecting", so record the code: it is what
+		// separates an expired session from an identify-restart from a dropped socket.
+		client_core::runlog::record(
+			"gateway",
+			&format!("closed code={code} action={:?}", close_action(code)),
+		);
 		match close_action(code) {
 			Reconnect::Stop => {
 				return Err(if code == 4004 {
@@ -177,6 +184,15 @@ impl Heartbeat {
 			.awaiting_since
 			.is_some_and(|sent| now.duration_since(sent) >= interval)
 		{
+			// A heartbeat that is never acknowledged is the one drop that looks like a
+			// reconnect with no close code from the service, so record it explicitly.
+			client_core::runlog::record(
+				"gateway",
+				&format!(
+					"heartbeat unacked for {:?} (interval {interval:?})",
+					self.awaiting_since.map(|sent| now.duration_since(sent))
+				),
+			);
 			return Err(Failure::Network);
 		}
 		self.sent(now);
@@ -190,6 +206,7 @@ impl Heartbeat {
 	}
 }
 fn next_attempt(attempt: u32, ready_for: Option<Duration>) -> u32 {
+	client_core::runlog::record("gateway", &format!("reconnect attempt={attempt}"));
 	// Reset backoff only after a stable connection; cap it during prolonged outages.
 	if ready_for.is_some_and(|duration| duration >= Duration::from_secs(60)) {
 		1

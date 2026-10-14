@@ -28,6 +28,7 @@ pub mod profile;
 pub mod reactions;
 pub mod read_state;
 mod replies;
+pub mod runlog;
 pub use replies::{HistoryNavigation, Reply, ReplyDeletions};
 pub mod group_actions;
 pub mod onboarding;
