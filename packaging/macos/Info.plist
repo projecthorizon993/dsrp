@@ -8,7 +8,7 @@
 <key>CFBundleIconFile</key><string>dsrp.icns</string>
 <key>CFBundleIconName</key><string>dsrp</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.3.5</string>
+<key>CFBundleShortVersionString</key><string>0.3.6</string>
 <key>NSMicrophoneUsageDescription</key><string>dsrp uses your microphone when you join a Discord server voice channel or start or answer a DM call.</string>
 <key>NSScreenCaptureUsageDescription</key><string>dsrp uses screen recording permission to list and share the screen or window you select in a Discord call.</string>
 <key>NSCameraUsageDescription</key><string>dsrp uses your camera only when you turn it on in a Discord call.</string>
