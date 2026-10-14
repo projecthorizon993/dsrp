@@ -1508,9 +1508,14 @@ impl DiscordApi {
 		Ok(())
 	}
 	async fn mark_guild_read(&self, guild: model::Id) -> Result<(), Failure> {
-		self.request_limited(Method::POST, &format!("/guilds/{guild}/ack"), None, 4096)
-			.await
-			.map(|_| ())
+		self.request_limited(
+			Method::POST,
+			&format!("/guilds/{guild}/ack"),
+			None,
+			MAX_WIRE,
+		)
+		.await
+		.map(|_| ())
 	}
 	/// Acknowledge every supplied server. Discord has no bulk route, so this is the
 	/// per-server call issued in turn.

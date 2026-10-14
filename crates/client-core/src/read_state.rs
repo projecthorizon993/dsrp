@@ -997,21 +997,23 @@ impl State {
 				match result {
 					Ok(()) => self.read_state.status = None,
 					Err(failure) => {
-						if failure.ends_session() {
-							self.fail(failure);
-						} else {
-							self.read_state.status = Some((
-								self.selected.unwrap_or(Id(0)),
-								match failure {
-									Failure::Ambiguous => {
-										"Read status could not be confirmed · unread markers may be out of date"
-									}
-									_ => {
-										"Read status could not sync · unread markers may be out of date"
-									}
-								},
-							));
-						}
+						// A bulk run writes one request per server, so a single server that
+						// fails must not end the session: the servers that did land stay
+						// acknowledged, the rest stay visibly unread, and reconnecting would
+						// only replay the same run and fail on the same server again. Ending
+						// the session here turned one bad server into a reconnect loop.
+						// The servers actually written are reconciled above either way.
+						self.read_state.status = Some((
+							self.selected.unwrap_or(Id(0)),
+							match failure {
+								Failure::Ambiguous => {
+									"Read status could not be confirmed · unread markers may be out of date"
+								}
+								_ => {
+									"Read status could not sync · unread markers may be out of date"
+								}
+							},
+						));
 					}
 				}
 			}
@@ -1721,6 +1723,49 @@ mod navigation_tests {
 			state.read_state.status.is_some(),
 			"a partial write must surface a status rather than silently succeed"
 		);
+	}
+
+	#[test]
+	fn a_bulk_ack_never_ends_the_session_however_badly_one_server_fails() {
+		// A per-server failure inside a bulk run used to call `self.fail`, which drops the
+		// gateway. Reconnecting replays the run and fails on the same server, so one
+		// unwritable server became a permanent reconnect loop. A bulk run must survive.
+		for failure in [
+			Failure::Ambiguous,
+			Failure::Capacity,
+			Failure::Network,
+			Failure::RateLimited,
+		] {
+			let mut state = state(None);
+			guild_channel(&mut state, 11, 100);
+			guild_channel(&mut state, 12, 200);
+			mark_unread(&mut state, &[11, 12]);
+			let Command::MarkAllServersRead { request, .. } =
+				state.mark_all_servers_read().unwrap()
+			else {
+				panic!("expected a bulk acknowledgement");
+			};
+			state
+				.apply_read_state(Event::AllServersAck {
+					request,
+					acked: vec![Id(100)],
+					result: Err(failure),
+				})
+				.unwrap();
+			assert!(
+				state.gateway_connected,
+				"{failure:?} in a bulk run must not end the session"
+			);
+			assert!(
+				state.auth != crate::auth::AuthState::Expired,
+				"{failure:?} in a bulk run must not expire authentication"
+			);
+			assert_eq!(
+				state.unread(Id(12)),
+				Some(true),
+				"{failure:?}: the server that was never written stays unread"
+			);
+		}
 	}
 
 	#[test]
