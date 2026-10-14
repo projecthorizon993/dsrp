@@ -26,7 +26,7 @@ impl GpuPreference {
 	}
 	pub fn description(self) -> &'static str {
 		match self {
-			Self::Automatic => "Let Serein choose the GPU that can draw this window.",
+			Self::Automatic => "Let dsrp choose the GPU that can draw this window.",
 			Self::HighPerformance => "Use the discrete graphics card when one is available.",
 			Self::PowerSaving => "Use integrated graphics to save battery.",
 		}

@@ -54,7 +54,7 @@ pub enum Status {
 impl Status {
 	pub fn label(self) -> &'static str {
 		match self {
-			Self::Disabled => "System notifications are off in Serein settings.",
+			Self::Disabled => "System notifications are off in dsrp settings.",
 			Self::Enabling => "Checking system notification permission…",
 			Self::Ready => "",
 			Self::Denied => "System notifications are disabled in your OS settings.",
@@ -193,7 +193,7 @@ impl Notifications {
 	/// Queue a privacy-preserving generic alert. False means disabled, unavailable or overloaded.
 	pub fn notify(&self) -> bool {
 		self.enqueue(Alert {
-			title: "Serein".into(),
+			title: "dsrp".into(),
 			body: GENERIC_BODY.into(),
 			image_path: None,
 		})
@@ -616,11 +616,11 @@ mod tests {
 	#[test]
 	fn disabled_is_lazy_and_fixed_queue_is_bounded_and_invalidated() {
 		let alert = notification(&Alert {
-			title: "Serein".into(),
+			title: "dsrp".into(),
 			body: GENERIC_BODY.into(),
 			image_path: None,
 		});
-		assert_eq!(alert.summary, "Serein");
+		assert_eq!(alert.summary, "dsrp");
 		assert_eq!(alert.body, "You have a new message.");
 		let mut notifications = Notifications::new(|| {}, || {});
 		assert_eq!(notifications.status(), Status::Disabled);

@@ -225,7 +225,7 @@ mod native {
 			};
 			// SAFETY: menu and hwnd are live UI-thread handles; Rc keeps callback state stable.
 			unsafe {
-				AppendMenuW(menu, MF_STRING, SHOW, w!("Show Serein")).map_err(|_| UNAVAILABLE)?;
+				AppendMenuW(menu, MF_STRING, SHOW, w!("Show dsrp")).map_err(|_| UNAVAILABLE)?;
 				AppendMenuW(menu, MF_STRING, QUIT, w!("Quit")).map_err(|_| UNAVAILABLE)?;
 				SetMenuDefaultItem(menu, SHOW as u32, 0).map_err(|_| UNAVAILABLE)?;
 				let reference = Rc::into_raw(tray.state.clone());
@@ -288,10 +288,10 @@ mod native {
 
 	fn voice_state_tip(state: super::VoiceState) -> &'static str {
 		match state {
-			super::VoiceState::Unmuted => "Serein",
-			super::VoiceState::Speaking => "Serein (Speaking)",
-			super::VoiceState::Muted => "Serein (Muted)",
-			super::VoiceState::Deafened => "Serein (Deafened)",
+			super::VoiceState::Unmuted => "dsrp",
+			super::VoiceState::Speaking => "dsrp (Speaking)",
+			super::VoiceState::Muted => "dsrp (Muted)",
+			super::VoiceState::Deafened => "dsrp (Deafened)",
 		}
 	}
 

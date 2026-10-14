@@ -601,6 +601,16 @@ impl State {
 		if guilds.is_empty() || channels.is_empty() {
 			return None;
 		}
+		// Clear the visible notification surface now, not when the run finishes. Discord
+		// has no bulk acknowledge route, so the writes are paced and a large account can
+		// take minutes; the reader asked for these to read, so the badges go immediately.
+		// Only the notifications move here. The read cursors stay pending so a partial
+		// failure still reconciles to what was actually written.
+		for (channel, _, message) in &channels {
+			self.read_state
+				.activity
+				.ack(*channel, Some(*message), Some(0));
+		}
 		self.read_state.revision = self.read_state.revision.wrapping_add(1);
 		let request = self.read_state.revision;
 		let queued = guilds.clone();

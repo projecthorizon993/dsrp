@@ -60,7 +60,7 @@ pub async fn upload(
 		return Err(Error::Cancelled);
 	}
 	let client = reqwest::Client::builder()
-		.user_agent(concat!("Serein/", env!("CARGO_PKG_VERSION")))
+		.user_agent(concat!("dsrp/", env!("CARGO_PKG_VERSION")))
 		.https_only(true)
 		.no_proxy()
 		.redirect(reqwest::redirect::Policy::none())

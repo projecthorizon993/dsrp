@@ -48,7 +48,47 @@ use std::{
 };
 
 /// Pause inserted between the per-server writes of one "mark all read" run.
-const ACK_PACE: Duration = Duration::from_millis(150);
+///
+/// Discord exposes no bulk acknowledge route, so the run is one request per server. A
+/// tight burst trips the global rate limit, which stalls every other REST request
+/// behind the shared cooldown and drops the session. Pacing well inside the limit
+/// trades a slow, quiet run for one that never floods the API.
+const ACK_PACE_MIN: Duration = Duration::from_millis(1_000);
+const ACK_PACE_MAX: Duration = Duration::from_millis(3_000);
+
+/// Jittered pause between the per-server writes of one "mark all read" run.
+///
+/// Spacing the writes at a fixed interval makes the run look mechanical to the API and
+/// to any intermediary that watches request timing. A per-run random seed spreads the
+/// pauses instead, so the run stays inside the limit without a fixed cadence.
+struct Pacing {
+	state: u64,
+}
+
+impl Pacing {
+	fn new() -> Self {
+		// Seeded per run from the clock; each bulk acknowledgement is a separate call.
+		let seed = std::time::SystemTime::now()
+			.duration_since(std::time::UNIX_EPOCH)
+			.map_or(0x9E37_79B9_7F4A_7C15, |d| d.as_nanos() as u64)
+			| 1;
+		Self { state: seed }
+	}
+	/// xorshift64*: a small, dependency-free generator for the pause spread.
+	fn next(&mut self) -> u64 {
+		let mut x = self.state;
+		x ^= x >> 12;
+		x ^= x << 25;
+		x ^= x >> 27;
+		self.state = x;
+		x.wrapping_mul(0x2545_F491_4F6C_DD1D)
+	}
+	async fn wait(&mut self) {
+		let span = (ACK_PACE_MAX - ACK_PACE_MIN).as_millis() as u64;
+		let extra = if span == 0 { 0 } else { self.next() % span };
+		tokio::time::sleep(ACK_PACE_MIN + Duration::from_millis(extra)).await;
+	}
+}
 use tokio::{
 	sync::{Mutex, Semaphore},
 	time::{Instant, sleep_until},
@@ -1475,13 +1515,9 @@ impl DiscordApi {
 		guilds: &[model::Id],
 	) -> (Vec<model::Id>, Option<Failure>) {
 		let mut acked = Vec::with_capacity(guilds.len());
-		for (index, guild) in guilds.iter().enumerate() {
-			// Discord has no bulk ack route, so this runs one request per server. Pace the
-			// run so a large account cannot trip the global rate limit, which would stall
-			// every other REST request behind the shared cooldown.
-			if index > 0 {
-				tokio::time::sleep(ACK_PACE).await;
-			}
+		let mut pacing = Pacing::new();
+		for guild in guilds {
+			pacing.wait().await;
 			if let Err(failure) = self.mark_guild_read(*guild).await {
 				return (acked, Some(failure));
 			}
