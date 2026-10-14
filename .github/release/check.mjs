@@ -11,10 +11,13 @@ import { load } from 'js-yaml';
 
 const workflow = load(readFileSync('.github/workflows/release.yml', 'utf8'));
 
-// The tag is the version, and pushing one is the only way to publish. There is deliberately no
-// manual dispatch path: a release that nothing is tagged for is a release nobody can point at.
-assert.deepEqual(Object.keys(workflow.on), ['push']);
+// The tag is the version, and a release is always for a tag. A manual dispatch may
+// rebuild and republish a tag that already exists, but it may not invent a version:
+// the dispatch input names an existing tag, and prepare still refuses a tag that
+// disagrees with the workspace version.
+assert.deepEqual(Object.keys(workflow.on).sort(), ['push', 'workflow_dispatch']);
 assert.deepEqual(workflow.on.push.tags, ['v[0-9]+.[0-9]+.[0-9]+']);
+assert(workflow.on.workflow_dispatch.inputs.tag.required === true);
 
 // Windows x64 and arm64 are both still built.
 const platforms = workflow.jobs.build.strategy.matrix.os;
