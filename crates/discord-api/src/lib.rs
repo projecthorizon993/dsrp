@@ -453,6 +453,18 @@ impl DiscordApi {
 		}
 		if !status.is_success() {
 			let error = decode::<ErrorBody>(&bytes).unwrap_or_default();
+			// A rejected request is otherwise reported only as a generic failure. The
+			// status decides the response: a 429 is a limit to wait out, a 400 means the
+			// body is malformed, and the two need opposite handling.
+			client_core::runlog::record(
+				"rest",
+				&format!(
+					"{status} on {path}{}",
+					error
+						.code
+						.map_or(String::new(), |code| format!(" code={code}"))
+				),
+			);
 			if error.captcha_key.is_some() || matches!(error.code, Some(60003 | 50014)) {
 				let auth_challenge = matches!(error.code, Some(60003 | 50014));
 				if !auth_challenge
@@ -1516,8 +1528,22 @@ impl DiscordApi {
 		let body = serde_json::json!({ "read_states": read_states });
 		// A bulk acknowledgement returns 204 with no body, so the cap only has to
 		// admit the request's own response, not a payload.
-		self.request_limited(Method::POST, "/read-states/ack-bulk", Some(body), MAX_WIRE)
-			.await?;
+		if let Err(failure) = self
+			.request_limited(Method::POST, "/read-states/ack-bulk", Some(body), MAX_WIRE)
+			.await
+		{
+			// The service rejected the whole body, so nothing was acknowledged. Record
+			// why: a silent failure here looks identical to the action simply doing
+			// nothing, and the channels stay unread.
+			client_core::runlog::record(
+				"read",
+				&format!(
+					"mark all read failed for {} channels: {failure:?}",
+					acks.len()
+				),
+			);
+			return Err(failure);
+		}
 		client_core::runlog::record(
 			"read",
 			&format!("mark all read accepted for {} channels", acks.len()),
