@@ -945,9 +945,11 @@ impl State {
 					});
 					return Ok(());
 				}
-				// The bulk write is all-or-nothing, so a successful reply confirms every
-				// channel it carried. A failure confirms none, and leaving them unread is
-				// the honest outcome: the service never accepted those cursors.
+				// A chunked bulk write can stop part way, so a failure does not prove that nothing
+				// landed. Whatever did land is authoritative: the service fires a Message
+				// Ack per acknowledged channel, which is applied on the gateway and corrects
+				// the read state on its own. Reconciling here on failure would claim a write
+				// never happened and could contradict that, so only a success is applied.
 				if result.is_ok() && !channels.is_empty() {
 					self.read_state.revision = self.read_state.revision.wrapping_add(1);
 					let revision = self.read_state.revision;

@@ -49,6 +49,17 @@ use std::{
 
 /// `CHANNEL` read state type, the default for `POST /read-states/ack-bulk`.
 const READ_STATE_CHANNEL: u8 = 0;
+
+/// Read states carried by one bulk acknowledgement.
+///
+/// Discord rejects the whole body with a 400 and `50035 Invalid Form Body` when the
+/// array is too long, and its bulk routes cap an array at 100 entries. An account with
+/// unread channels across a few hundred servers therefore has to be split.
+const READ_STATE_CHUNK: usize = 100;
+
+/// Pause between bulk acknowledgement chunks, so draining a large account stays a
+/// handful of requests rather than a burst.
+const READ_STATE_CHUNK_GAP: Duration = Duration::from_millis(750);
 use tokio::{
 	sync::{Mutex, Semaphore},
 	time::{Instant, sleep_until},
@@ -1511,42 +1522,50 @@ impl DiscordApi {
 		client_core::runlog::record(
 			"read",
 			&format!(
-				"mark all read: one bulk request for {} channels",
+				"mark all read: {} channels in chunks of {READ_STATE_CHUNK}",
 				acks.len()
 			),
 		);
-		let read_states: Vec<serde_json::Value> = acks
-			.iter()
-			.map(|(channel, message)| {
-				serde_json::json!({
-					"read_state_type": READ_STATE_CHANNEL,
-					"channel_id": channel.0.to_string(),
-					"message_id": message.0.to_string(),
+		let mut acknowledged = 0usize;
+		let mut chunks = acks.chunks(READ_STATE_CHUNK);
+		while let Some(chunk) = chunks.next() {
+			let read_states: Vec<serde_json::Value> = chunk
+				.iter()
+				.map(|(channel, message)| {
+					serde_json::json!({
+						"read_state_type": READ_STATE_CHANNEL,
+						"channel_id": channel.0.to_string(),
+						"message_id": message.0.to_string(),
+					})
 				})
-			})
-			.collect();
-		let body = serde_json::json!({ "read_states": read_states });
-		// A bulk acknowledgement returns 204 with no body, so the cap only has to
-		// admit the request's own response, not a payload.
-		if let Err(failure) = self
-			.request_limited(Method::POST, "/read-states/ack-bulk", Some(body), MAX_WIRE)
-			.await
-		{
-			// The service rejected the whole body, so nothing was acknowledged. Record
-			// why: a silent failure here looks identical to the action simply doing
-			// nothing, and the channels stay unread.
-			client_core::runlog::record(
-				"read",
-				&format!(
-					"mark all read failed for {} channels: {failure:?}",
-					acks.len()
-				),
-			);
-			return Err(failure);
+				.collect();
+			let body = serde_json::json!({ "read_states": read_states });
+			// A bulk acknowledgement returns 204 with no body, so the cap only has to
+			// admit the request's own response, not a payload.
+			if let Err(failure) = self
+				.request_limited(Method::POST, "/read-states/ack-bulk", Some(body), MAX_WIRE)
+				.await
+			{
+				// A rejected chunk confirms none of it, so the count reported is what was
+				// actually accepted. Record why, since a silent failure here looks exactly
+				// like the action doing nothing and the channels stay unread.
+				client_core::runlog::record(
+					"read",
+					&format!(
+						"mark all read failed after {acknowledged} of {} channels: {failure:?}",
+						acks.len()
+					),
+				);
+				return Err(failure);
+			}
+			acknowledged += chunk.len();
+			if chunks.len() != 0 {
+				tokio::time::sleep(READ_STATE_CHUNK_GAP).await;
+			}
 		}
 		client_core::runlog::record(
 			"read",
-			&format!("mark all read accepted for {} channels", acks.len()),
+			&format!("mark all read accepted for {acknowledged} channels"),
 		);
 		Ok(())
 	}
