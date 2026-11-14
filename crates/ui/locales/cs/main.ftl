@@ -3002,6 +3002,8 @@ server-menu-header-server-menu = Nabídka serveru
 server-menu-leave-item-leave-server = Opustit server
 # Context: read_item
 server-menu-read-item-mark-as-read = Označit jako přečtené
+# Context: the rail tile under the home button (readAllNotificationsButton)
+notifications-rail-mark-all-servers-read = Označit všechny servery jako přečtené
 # Context: settings_item
 server-menu-settings-item-server-settings = Nastavení serveru
 # Context: show

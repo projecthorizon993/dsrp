@@ -2992,6 +2992,8 @@ server-menu-header-server-menu = Sunucu menüsü
 server-menu-leave-item-leave-server = Sunucudan ayrıl
 # Context: read_item
 server-menu-read-item-mark-as-read = Okundu Olarak İşaretle
+# Context: the rail tile under the home button (readAllNotificationsButton)
+notifications-rail-mark-all-servers-read = Tüm sunucuları okundu olarak işaretle
 # Context: settings_item
 server-menu-settings-item-server-settings = Sunucu Ayarları
 # Context: show

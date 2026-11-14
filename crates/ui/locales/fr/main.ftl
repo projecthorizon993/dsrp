@@ -2991,6 +2991,8 @@ server-menu-header-server-menu = Menu du serveur
 server-menu-leave-item-leave-server = Quitter le serveur
 # Context: read_item
 server-menu-read-item-mark-as-read = Marquer comme lu
+# Context: the rail tile under the home button (readAllNotificationsButton)
+notifications-rail-mark-all-servers-read = Marquer tous les serveurs comme lus
 # Context: settings_item
 server-menu-settings-item-server-settings = Paramètres du serveur
 # Context: show
